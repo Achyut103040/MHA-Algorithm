@@ -1,0 +1,48 @@
+{
+    "algorithm_name": "AquilaOptimizer",
+    "best_fitness": 0.0,
+    "best_solution": [
+        0.2924857713274195,
+        0.5924100152934724,
+        0.06393404411627501,
+        0.9115306641238924
+    ],
+    "convergence_curve": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "execution_time": 0.24455618858337402,
+    "parameters": {
+        "population_size": 10,
+        "max_iterations": 10,
+        "lower_bound": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "upper_bound": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "dimensions": 4,
+        "verbose": false
+    },
+    "problem_type": "feature_selection",
+    "timestamp": "2025-09-14T02:13:53.649020",
+    "n_selected_features": 2,
+    "selected_feature_indices": [
+        1,
+        3
+    ]
+}
