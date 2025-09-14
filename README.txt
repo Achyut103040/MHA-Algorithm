@@ -1,11 +1,9 @@
 # MHA Toolbox - Advanced Metaheuristic Algorithms Library
 
-A professional, TensorFlow-style library for metaheuristic optimization algorithms
-with advanced visualization, statistical analysis, and comprehensive result management.
 
 ## 📋 Features
 
-✅ TensorFlow-like API: mha.ao(), mha.pso(), mha.sca(), etc.
+✅ mha.ao(), mha.pso(), mha.sca(), etc.
 ✅ Strict data requirements with intelligent parameter defaults
 ✅ Professional result management with automatic saving
 ✅ Advanced visualization and statistical analysis
@@ -229,7 +227,7 @@ mha.pso(objective_function=func, 25, 100)  # positional params
 
 ## Key Features
 
-✅ **TensorFlow-like simplicity** - `mha.ao()`, `mha.pso()`, etc.  
+✅ **-like simplicity** - `mha.ao()`, `mha.pso()`, etc.  
 ✅ **Maximum flexibility** - Any parameter combination works  
 ✅ **Automatic result saving** - JSON/CSV outputs in `results/`  
 ✅ **Professional result objects** - Detailed analysis and visualization  
