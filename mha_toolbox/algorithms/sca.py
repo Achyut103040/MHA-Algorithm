@@ -57,14 +57,18 @@ class SineCosinAlgorithm(BaseOptimizer):
         self.a = a
         self.algorithm_name = "SineCosinAlgorithm"
     
-    def _optimize(self, objective_function, **kwargs):
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
         """
-        Implement the Sine Cosine Algorithm optimization.
+        Implement the Sine Cosine Algorithm optimization with automatic parameter calculation.
         
         Parameters
         ----------
         objective_function : callable
             The function to optimize
+        X : array-like, optional
+            Feature matrix for feature selection problems
+        y : array-like, optional
+            Target values for feature selection problems
         **kwargs : dict
             Additional algorithm-specific parameters
             
@@ -72,6 +76,26 @@ class SineCosinAlgorithm(BaseOptimizer):
         -------
         None
         """
+        # Automatically determine problem type and set bounds/dimensions
+        if X is not None:
+            # Feature selection problem
+            self.dimensions = X.shape[1]
+            self.lower_bound = np.zeros(self.dimensions)
+            self.upper_bound = np.ones(self.dimensions)
+        else:
+            # Function optimization problem
+            if not hasattr(self, 'dimensions') or self.dimensions is None:
+                self.dimensions = kwargs.get('dimensions', 10)
+            
+            # Set bounds if not already set
+            if not hasattr(self, 'lower_bound') or self.lower_bound is None:
+                lb = kwargs.get('lower_bound', kwargs.get('lb', -10.0))
+                self.lower_bound = np.full(self.dimensions, lb) if np.isscalar(lb) else np.array(lb)
+            
+            if not hasattr(self, 'upper_bound') or self.upper_bound is None:
+                ub = kwargs.get('upper_bound', kwargs.get('ub', 10.0))
+                self.upper_bound = np.full(self.dimensions, ub) if np.isscalar(ub) else np.array(ub)
+        
         # Initialize population randomly within the bounds
         positions = np.random.uniform(
             low=self.lower_bound, 

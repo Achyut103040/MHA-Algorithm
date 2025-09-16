@@ -25,6 +25,8 @@ class AntColonyOptimization(BaseOptimizer):
         Deviation-distance ratio parameter
     """
     
+    aliases = ["aco", "ant_colony", "ant_colony_optimization"]
+    
     def __init__(self, q=0.01, zeta=1.0, **kwargs):
         super().__init__(**kwargs)
         self.q = q

@@ -27,6 +27,8 @@ class DifferentialEvolution(BaseOptimizer):
         DE strategy to use
     """
     
+    aliases = ["de", "differential", "differential_evolution"]
+    
     def __init__(self, F=0.5, CR=0.7, strategy='rand/1/bin', **kwargs):
         super().__init__(**kwargs)
         self.F = F

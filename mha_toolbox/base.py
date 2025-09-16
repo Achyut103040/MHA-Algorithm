@@ -87,118 +87,6 @@ class OptimizationModel:
             print(f"Convergence plot saved to {save_path}")
         
         plt.show()
-    
-    def plot_advanced(self, plot_type='all', save_path=None):
-        """
-        Create advanced visualization plots using the AdvancedVisualizer.
-        
-        Parameters
-        ----------
-        plot_type : str
-            Type of plot: 'convergence', 'exploration', 'statistical', 'trajectory', 'all'
-        save_path : str, optional
-            Path to save the plot
-        """
-        from .utils.visualizations import AdvancedVisualizer
-        
-        visualizer = AdvancedVisualizer([self])
-        
-        if plot_type == 'convergence' or plot_type == 'all':
-            visualizer.convergence_plot(save_path=save_path)
-        if plot_type == 'exploration' or plot_type == 'all':
-            visualizer.exploration_exploitation_plot(save_path=save_path)
-        if plot_type == 'statistical' or plot_type == 'all':
-            visualizer.statistical_analysis_plot(save_path=save_path)
-        if plot_type == 'trajectory' or plot_type == 'all':
-            visualizer.search_trajectory_plot(save_path=save_path)
-    
-    def get_statistics(self):
-        """
-        Get comprehensive statistics about the optimization run.
-        
-        Returns
-        -------
-        dict
-            Dictionary containing various statistical measures
-        """
-        convergence = np.array(self.convergence_curve)
-        
-        stats = {
-            'algorithm_name': self.algorithm_name,
-            'best_fitness': self.best_fitness,
-            'final_fitness': convergence[-1],
-            'initial_fitness': convergence[0],
-            'improvement_ratio': (convergence[0] - convergence[-1]) / convergence[0] if convergence[0] != 0 else 0,
-            'convergence_rate': np.mean(np.abs(np.diff(convergence))),
-            'fitness_variance': np.var(convergence),
-            'fitness_std': np.std(convergence),
-            'iterations': len(convergence),
-            'execution_time': self.execution_time,
-            'convergence_speed': len(convergence) / self.execution_time if self.execution_time > 0 else 0
-        }
-        
-        # Early convergence detection
-        if len(convergence) > 10:
-            # Check if algorithm converged early (no significant improvement in last 20% of iterations)
-            last_20_percent = int(0.2 * len(convergence))
-            early_convergence = np.std(convergence[-last_20_percent:]) < 0.01 * np.std(convergence)
-            stats['early_convergence'] = early_convergence
-            
-            # Stagnation periods
-            improvements = np.abs(np.diff(convergence))
-            stagnation_threshold = 0.001 * np.mean(improvements)
-            stagnation_periods = np.sum(improvements < stagnation_threshold)
-            stats['stagnation_ratio'] = stagnation_periods / len(improvements)
-        
-        return stats
-    
-    def compare_with(self, other_result):
-        """
-        Compare this result with another optimization result.
-        
-        Parameters
-        ----------
-        other_result : OptimizationModel
-            Another optimization result to compare with
-            
-        Returns
-        -------
-        dict
-            Comparison statistics
-        """
-        from .utils.visualizations import AdvancedVisualizer
-        
-        # Statistical comparison
-        comparison = {
-            'algorithms': [self.algorithm_name, other_result.algorithm_name],
-            'best_fitness': [self.best_fitness, other_result.best_fitness],
-            'execution_time': [self.execution_time, other_result.execution_time],
-            'winner_fitness': self.algorithm_name if self.best_fitness < other_result.best_fitness else other_result.algorithm_name,
-            'winner_speed': self.algorithm_name if self.execution_time < other_result.execution_time else other_result.algorithm_name,
-            'fitness_improvement': abs(self.best_fitness - other_result.best_fitness),
-            'time_difference': abs(self.execution_time - other_result.execution_time)
-        }
-        
-        # Create comparison visualization
-        visualizer = AdvancedVisualizer([self, other_result])
-        visualizer.convergence_plot()
-        visualizer.box_plot()
-        
-        return comparison
-    
-    def statistical_report(self):
-        """
-        Generate a detailed statistical report for this optimization result.
-        
-        Returns
-        -------
-        str
-            Formatted statistical report
-        """
-        from .utils.statistics import StatisticalAnalyzer
-        
-        analyzer = StatisticalAnalyzer([self])
-        return analyzer.generate_report()
 
     def save(self, filename=None, format='json'):
         """
@@ -434,27 +322,43 @@ class BaseOptimizer(ABC):
         
         return objective
 
-    def optimize(self, X=None, y=None, objective_function=None):
+    def optimize(self, problem=None, X=None, y=None, objective_function=None):
         """
         Run the optimization process.
         
-        This is the main public method that users will call. It handles
-        parameter initialization, runs the core optimization logic, and
-        returns a standardized result object.
+        This method can accept either a problem object or direct parameters.
         
-        X is REQUIRED - the system assumes data will always be provided.
+        Parameters
+        ----------
+        problem : dict, optional
+            Problem definition dictionary from create_problem()
+        X : array-like, optional
+            Feature matrix (alternative to problem)
+        y : array-like, optional
+            Target values (alternative to problem)
+        objective_function : callable, optional
+            Objective function (alternative to problem)
         """
-        # Enforce X requirement - this is the key change
-        if X is None and objective_function is None:
-            raise ValueError("Input data 'X' is required. Please provide your dataset.")
-            
+        
+        # Handle problem object
+        if problem is not None:
+            objective_function = problem['objective_function']
+            X = problem.get('X')
+            y = problem.get('y')
+            if 'dimensions' in problem:
+                self.dimensions = problem['dimensions']
+            if 'bounds' in problem:
+                bounds = problem['bounds']
+                self.lower_bound = [b[0] for b in bounds]
+                self.upper_bound = [b[1] for b in bounds]
+        
+        # Enforce that we have what we need
+        if objective_function is None:
+            raise ValueError("Objective function is required")
+        
         start_time = time.time()
         
         self._initialize_parameters(X, y, objective_function)
-        
-        # If it's feature selection and no objective function is given, create one
-        if self.problem_type == 'feature_selection' and objective_function is None:
-            objective_function = self._create_objective_function(X, y)
         
         # Run the algorithm-specific optimization
         best_solution, best_fitness, convergence_curve = self._optimize(
@@ -468,15 +372,6 @@ class BaseOptimizer(ABC):
         model = self._create_model(
             best_solution, best_fitness, convergence_curve, execution_time, X, y
         )
-        
-        # Automatically save all results and curves
-        try:
-            model.save()
-            if self.verbose:
-                print(f"✅ Results automatically saved!")
-        except Exception as e:
-            if self.verbose:
-                print(f"⚠️ Could not save results: {e}")
         
         if self.verbose:
             print(f"\nOptimization finished in {execution_time:.4f} seconds.")

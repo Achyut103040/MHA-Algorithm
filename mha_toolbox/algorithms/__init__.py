@@ -11,7 +11,6 @@ from .fa import FireflyAlgorithm
 from .ba import BatAlgorithm
 from .aco import AntColonyOptimization
 from .de import DifferentialEvolution
-from .ao import AquilaOptimizer
 
 __all__ = [
     'SineCosinAlgorithm',
@@ -22,6 +21,5 @@ __all__ = [
     'FireflyAlgorithm',
     'BatAlgorithm',
     'AntColonyOptimization',
-    'DifferentialEvolution',
-    'AquilaOptimizer'
+    'DifferentialEvolution'
 ]

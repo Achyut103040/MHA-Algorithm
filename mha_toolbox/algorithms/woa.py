@@ -18,6 +18,8 @@ class WhaleOptimizationAlgorithm(BaseOptimizer):
     attacking method, and search for prey.
     """
     
+    aliases = ["woa", "whale", "whale_optimization"]
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.algorithm_name = "WOA"

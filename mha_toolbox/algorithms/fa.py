@@ -27,6 +27,8 @@ class FireflyAlgorithm(BaseOptimizer):
         Light absorption coefficient
     """
     
+    aliases = ["fa", "firefly", "firefly_algorithm"]
+    
     def __init__(self, alpha=0.2, beta_0=1.0, gamma=1.0, **kwargs):
         super().__init__(**kwargs)
         self.alpha = alpha

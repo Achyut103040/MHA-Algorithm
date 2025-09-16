@@ -28,6 +28,8 @@ class BatAlgorithm(BaseOptimizer):
         Maximum frequency
     """
     
+    aliases = ["ba", "bat", "bat_algorithm"]
+    
     def __init__(self, A=0.5, r=0.5, f_min=0.0, f_max=2.0, **kwargs):
         super().__init__(**kwargs)
         self.A = A
