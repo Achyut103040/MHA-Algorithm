@@ -25,6 +25,8 @@ class GeneticAlgorithm(BaseOptimizer):
         Percentage of best individuals to keep in next generation
     """
     
+    aliases = ["ga", "genetic", "genetic_algorithm"]
+    
     def __init__(self, crossover_rate=0.8, mutation_rate=0.1, elite_rate=0.1, **kwargs):
         super().__init__(**kwargs)
         self.crossover_rate = crossover_rate
@@ -32,8 +34,28 @@ class GeneticAlgorithm(BaseOptimizer):
         self.elite_rate = elite_rate
         self.algorithm_name = "GA"
     
-    def _optimize(self, objective_function, **kwargs):
-        """GA optimization implementation"""
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
+        """GA optimization implementation with automatic parameter calculation"""
+        # Automatically determine problem type and set bounds/dimensions
+        if X is not None:
+            # Feature selection problem
+            self.dimensions = X.shape[1]
+            self.lower_bound = np.zeros(self.dimensions)
+            self.upper_bound = np.ones(self.dimensions)
+        else:
+            # Function optimization problem
+            if not hasattr(self, 'dimensions') or self.dimensions is None:
+                self.dimensions = kwargs.get('dimensions', 10)
+            
+            # Set bounds if not already set
+            if not hasattr(self, 'lower_bound') or self.lower_bound is None:
+                lb = kwargs.get('lower_bound', kwargs.get('lb', -10.0))
+                self.lower_bound = np.full(self.dimensions, lb) if np.isscalar(lb) else np.array(lb)
+            
+            if not hasattr(self, 'upper_bound') or self.upper_bound is None:
+                ub = kwargs.get('upper_bound', kwargs.get('ub', 10.0))
+                self.upper_bound = np.full(self.dimensions, ub) if np.isscalar(ub) else np.array(ub)
+        
         # Initialize population
         population = np.random.uniform(
             self.lower_bound, self.upper_bound,
@@ -105,16 +127,18 @@ class GeneticAlgorithm(BaseOptimizer):
         """Gaussian mutation"""
         for i in range(len(individual)):
             if np.random.random() < self.mutation_rate:
-                # Handle bounds properly
                 if hasattr(self, 'upper_bound') and hasattr(self, 'lower_bound'):
-                    if isinstance(self.upper_bound, np.ndarray):
-                        mutation_range = abs(self.upper_bound[i] - self.lower_bound[i]) * 0.1
-                        individual[i] += np.random.normal(0, mutation_range)
-                        individual[i] = np.clip(individual[i], self.lower_bound[i], self.upper_bound[i])
-                    else:
-                        mutation_range = abs(self.upper_bound - self.lower_bound) * 0.1
-                        individual[i] += np.random.normal(0, mutation_range)
-                        individual[i] = np.clip(individual[i], self.lower_bound, self.upper_bound)
+                    # Handle both scalar and array bounds
+                    ub = self.upper_bound[i] if hasattr(self.upper_bound, '__len__') else self.upper_bound
+                    lb = self.lower_bound[i] if hasattr(self.lower_bound, '__len__') else self.lower_bound
+                    mutation_range = abs(ub - lb)
                 else:
-                    individual[i] += np.random.normal(0, 0.1)
+                    mutation_range = 2.0
+                    
+                individual[i] += np.random.normal(0, 0.1 * mutation_range)
+                
+                if hasattr(self, 'upper_bound') and hasattr(self, 'lower_bound'):
+                    ub = self.upper_bound[i] if hasattr(self.upper_bound, '__len__') else self.upper_bound
+                    lb = self.lower_bound[i] if hasattr(self.lower_bound, '__len__') else self.lower_bound
+                    individual[i] = np.clip(individual[i], lb, ub)
         return individual
