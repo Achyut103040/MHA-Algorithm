@@ -33,53 +33,52 @@ class AntColonyOptimization(BaseOptimizer):
         self.zeta = zeta
         self.algorithm_name = "ACO"
     
-    def _optimize(self, objective_function, **kwargs):
-        """ACO optimization implementation"""
-        # Initialize solution archive
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
+        # Use trailing underscore attributes
+        if X is not None:
+            dimensions = X.shape[1]
+            lower_bound = np.zeros(dimensions)
+            upper_bound = np.ones(dimensions)
+        else:
+            if not hasattr(self, 'dimensions_') or self.dimensions_ is None:
+                raise ValueError("Dimensions must be specified")
+            dimensions = self.dimensions_
+            lower_bound = self.lower_bound_
+            upper_bound = self.upper_bound_
+            
         archive = []
-        archive_size = self.population_size
-        
-        # Generate initial solutions
+        archive_size = self.population_size_
         for _ in range(archive_size):
-            solution = np.random.uniform(self.lower_bound, self.upper_bound, self.dimensions)
+            solution = np.random.uniform(lower_bound, upper_bound, dimensions)
             fitness = objective_function(solution)
             archive.append((solution, fitness))
-        
-        # Sort archive by fitness
         archive.sort(key=lambda x: x[1])
-        
-        convergence_curve = []
-        
-        for iteration in range(self.max_iterations):
+        global_fitness = []
+        local_fitness = []
+        local_positions = []
+        for iteration in range(self.max_iterations_):
             new_solutions = []
-            
-            for _ in range(self.population_size):
-                # Construct solution using probabilistic approach
-                solution = self._construct_solution(archive)
-                
-                # Apply bounds
-                solution = np.clip(solution, self.lower_bound, self.upper_bound)
-                
-                # Evaluate solution
+            fitnesses = []
+            positions = []
+            for _ in range(self.population_size_):
+                solution = self._construct_solution(archive, dimensions)
+                solution = np.clip(solution, self.lower_bound_, self.upper_bound_)
                 fitness = objective_function(solution)
                 new_solutions.append((solution, fitness))
-            
-            # Update archive
+                fitnesses.append(fitness)
+                positions.append(solution.copy())
             archive.extend(new_solutions)
             archive.sort(key=lambda x: x[1])
-            archive = archive[:archive_size]  # Keep only best solutions
-            
-            convergence_curve.append(archive[0][1])
-            
-            if self.verbose and (iteration + 1) % 10 == 0:
-                print(f"Iteration {iteration + 1}/{self.max_iterations}, Best Fitness: {archive[0][1]:.6f}")
-        
+            archive = archive[:archive_size]
+            global_fitness.append(archive[0][1])
+            local_fitness.append(fitnesses)
+            local_positions.append(positions)
         best_solution, best_fitness = archive[0]
-        return best_solution, best_fitness, convergence_curve
+        return best_solution, best_fitness, global_fitness, local_fitness, local_positions
     
-    def _construct_solution(self, archive):
+    def _construct_solution(self, archive, dimensions):
         """Construct a solution using the solution archive"""
-        solution = np.zeros(self.dimensions)
+        solution = np.zeros(dimensions)
         
         # Calculate weights for archive solutions
         weights = []

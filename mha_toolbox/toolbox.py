@@ -36,6 +36,51 @@ class MHAToolbox:
         self._discover_algorithms()
         self._create_aliases()
         self._initialized = True
+        # Add direct method access for each algorithm
+        self._create_direct_access_methods()
+    
+    def _create_direct_access_methods(self):
+        """Create direct access methods for each algorithm."""
+        for alg_name in self.algorithms.keys():
+            # Create method with full name  
+            method_name = alg_name.lower()
+            if not hasattr(self, method_name):
+                setattr(self, method_name, self._create_algorithm_method(alg_name))
+            
+            # Create method with alias
+            for alias, full_name in self.algorithm_aliases.items():
+                if full_name == alg_name and not hasattr(self, alias):
+                    setattr(self, alias, self._create_algorithm_method(alg_name))
+    
+    def _create_algorithm_method(self, algorithm_name):
+        """Create a method that returns an algorithm instance."""
+        def create_algorithm(**kwargs):
+            return self.get_optimizer(algorithm_name, **kwargs)
+        return create_algorithm
+        self._discover_algorithms()
+        self._create_aliases()
+        self._initialized = True
+        # Add direct method access for each algorithm
+        self._create_direct_access_methods()
+    
+    def _create_direct_access_methods(self):
+        """Create direct access methods for each algorithm."""
+        for alg_name in self.algorithms.keys():
+            # Create method with full name  
+            method_name = alg_name.lower()
+            if not hasattr(self, method_name):
+                setattr(self, method_name, self._create_algorithm_method(alg_name))
+            
+            # Create method with alias
+            for alias, full_name in self.algorithm_aliases.items():
+                if full_name == alg_name and not hasattr(self, alias):
+                    setattr(self, alias, self._create_algorithm_method(alg_name))
+    
+    def _create_algorithm_method(self, algorithm_name):
+        """Create a method that returns an algorithm instance."""
+        def create_algorithm(**kwargs):
+            return self.get_optimizer(algorithm_name, **kwargs)
+        return create_algorithm
     
     def _discover_algorithms(self):
         """Dynamically discover all algorithm classes in the toolbox."""
@@ -435,7 +480,7 @@ class MHAToolbox:
             result.execution_time = execution_time
         
         print(f"✅ Optimization completed in {execution_time:.3f} seconds")
-        print(f"🏆 Best fitness: {result.best_fitness:.6f}")
+        print(f"🏆 Best fitness: {result.best_fitness_:.6f}")
         
         return result
     

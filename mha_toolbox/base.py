@@ -7,6 +7,52 @@ from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
 class OptimizationModel:
+    def save_training_history(self, filename):
+        """Save the full training history (local_fitness and local_positions) to a file."""
+        history = {
+            'local_fitness': self.local_fitness_,
+            'local_positions': self.local_positions_
+        }
+        with open(filename, 'w') as f:
+            json.dump(self._deep_serialize(history), f, indent=4)
+
+    def plot_curve(self, curve_name, title=None, save_path=None):
+        """Plot any curve (global_fitness, local_fitness, etc.) from saved data."""
+        import matplotlib.pyplot as plt
+        data = getattr(self, curve_name, None)
+        if data is None:
+            print(f"Curve '{curve_name}' not found.")
+            return
+        plt.figure(figsize=(10, 6))
+        if curve_name == 'local_fitness_':
+            # Plot mean fitness per iteration
+            means = [np.mean(f) for f in data]
+            plt.plot(means, label='Mean Local Fitness', linewidth=2)
+        else:
+            plt.plot(data, linewidth=2)
+        plt.title(title or f'{curve_name} Curve')
+        plt.xlabel('Iteration')
+        plt.ylabel('Fitness')
+        plt.grid(True, linestyle='--', alpha=0.6)
+        if save_path:
+            os.makedirs(os.path.dirname(save_path) or '.', exist_ok=True)
+            plt.savefig(save_path, dpi=300)
+        # Only show interactively if no save_path was provided
+        if save_path is None:
+            plt.show()
+
+    def save_model(self, filename):
+        """Save the full OptimizationModel object for later loading/reuse."""
+        import pickle
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load_model(filename):
+        """Load a previously saved OptimizationModel object."""
+        import pickle
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
     """
     A standardized object to store and manage optimization results.
     
@@ -16,28 +62,26 @@ class OptimizationModel:
     analysis and visualization.
     """
     
-    def __init__(self, algorithm_name, best_solution, best_fitness, 
-                 convergence_curve, execution_time, parameters,
-                 problem_type='unknown', X_data=None, y_data=None):
-        
-        self.algorithm_name = algorithm_name
-        self.best_solution = np.array(best_solution)
-        self.best_fitness = best_fitness
-        self.convergence_curve = convergence_curve
-        self.execution_time = execution_time
-        self.parameters = parameters
-        self.problem_type = problem_type
-        self.timestamp = datetime.now().isoformat()
-        
+    def __init__(self, algorithm_name, best_solution, best_fitness, global_fitness, execution_time, parameters,
+                 problem_type='unknown', X_data=None, y_data=None, local_fitness=None, local_positions=None):
+        self.algorithm_name_ = algorithm_name
+        self.best_solution_ = np.array(best_solution)
+        self.best_fitness_ = best_fitness
+        self.global_fitness_ = global_fitness
+        self.execution_time_ = execution_time
+        self.parameters_ = parameters
+        self.problem_type_ = problem_type
+        self.timestamp_ = datetime.now().isoformat()
+        self.local_fitness_ = local_fitness
+        self.local_positions_ = local_positions
         # For feature selection, store binary solution and selected features
-        if self.problem_type == 'feature_selection':
-            self.best_solution_binary = (self.best_solution > 0.5).astype(int)
-            self.n_selected_features = sum(self.best_solution_binary)
-            self.selected_feature_indices = np.where(self.best_solution_binary)[0]
-        
+        if self.problem_type_ == 'feature_selection':
+            self.best_solution_binary_ = (self.best_solution_ > 0.5).astype(int)
+            self.n_selected_features_ = sum(self.best_solution_binary_)
+            self.selected_feature_indices_ = np.where(self.best_solution_binary_)[0]
         # Store a reference to the data if provided
-        self._X_data = X_data
-        self._y_data = y_data
+        self._X_data_ = X_data
+        self._y_data_ = y_data
 
     def summary(self):
         """
@@ -66,83 +110,112 @@ class OptimizationModel:
 
     def plot_convergence(self, title=None, save_path=None):
         """
-        Plot the convergence curve of the optimization.
-        
-        Parameters
-        ----------
-        title : str, optional
-            Title for the plot
-        save_path : str, optional
-            Path to save the plot image
+        Plot the convergence curve using global_fitness_.
         """
         plt.figure(figsize=(10, 6))
-        plt.plot(self.convergence_curve, linewidth=2)
-        plt.title(title or f'{self.algorithm_name} Convergence Curve')
+        plt.plot(self.global_fitness_, linewidth=2)
+        plt.title(title or f'{self.algorithm_name_} Convergence Curve')
         plt.xlabel('Iteration')
         plt.ylabel('Best Fitness')
         plt.grid(True, linestyle='--', alpha=0.6)
-        
         if save_path:
+            os.makedirs(os.path.dirname(save_path) or '.', exist_ok=True)
             plt.savefig(save_path, dpi=300)
-            print(f"Convergence plot saved to {save_path}")
-        
-        plt.show()
+        # only show interactively if no save_path was provided
+        if save_path is None:
+            plt.show()
 
-    def save(self, filename=None, format='json'):
+    def save(self, filename, format='json'):
         """
-        Save the optimization results to a file.
-        
-        Parameters
-        ----------
-        filename : str, optional
-            Filename to save results. If None, a default is generated.
-        format : str
-            'json' or 'txt'
+        Save the optimization results to a file. User must specify filename.
         """
-        if filename is None:
-            # Determine the appropriate subdirectory based on problem type and algorithm
-            if 'Hybrid' in self.algorithm_name:
-                subdir = 'results/hybrid_algorithms'
-            elif self.problem_type == 'function_optimization':
-                subdir = 'results/function_optimization'
-            else:
-                subdir = 'results/single_algorithms'
-            
-            # Create directory if it doesn't exist
-            import os
-            os.makedirs(subdir, exist_ok=True)
-            
-            filename = f"{subdir}/result_{self.algorithm_name}_{datetime.now():%Y%m%d_%H%M%S}.{format}"
-        
         data_to_save = {
-            'algorithm_name': self.algorithm_name,
-            'best_fitness': float(self.best_fitness),  # Ensure it's a Python float
-            'best_solution': self.best_solution.tolist(),  # Convert numpy array to list
-            'convergence_curve': [float(x) for x in self.convergence_curve],  # Ensure all are Python floats
-            'execution_time': float(self.execution_time),
-            'parameters': self._serialize_parameters(self.parameters),  # Handle numpy arrays in parameters
-            'problem_type': self.problem_type,
-            'timestamp': self.timestamp
+            'algorithm_name': self.algorithm_name_,
+            'best_fitness': float(self.best_fitness_),
+            'best_solution': self.best_solution_.tolist(),
+            'global_fitness': [float(x) for x in self.global_fitness_],
+            'execution_time': float(self.execution_time_),
+            'parameters': self._serialize_parameters(self.parameters_),
+            'problem_type': self.problem_type_,
+            'timestamp': self.timestamp_,
+            'local_fitness': self.local_fitness_ if self.local_fitness_ is not None else None,
+            'local_positions': self.local_positions_ if self.local_positions_ is not None else None
         }
-        
-        if self.problem_type == 'feature_selection':
-            data_to_save['n_selected_features'] = int(self.n_selected_features)
-            data_to_save['selected_feature_indices'] = self.selected_feature_indices.tolist()
+        if self.problem_type_ == 'feature_selection':
+            data_to_save['n_selected_features'] = int(self.n_selected_features_)
+            data_to_save['selected_feature_indices'] = self.selected_feature_indices_.tolist()
+        # New: auto-export options (plots, history, model) by default
+        return self.export_all(filename, data_to_save, format=format, export_plots=True, save_history=True, save_model=False)
 
+    def export_all(self, filename, data_to_save=None, format='json', export_plots=True, save_history=True, save_model=False):
+        """Save results + optional exports (plots, history, pickled model).
+
+        - filename: base filename (recommended .json)
+        - export_plots: save convergence and local-mean plots
+        - save_history: save local_fitness/local_positions as JSON
+        - save_model: pickle the OptimizationModel
+        Returns: path to primary saved file
+        """
         try:
-            with open(filename, 'w') as f:
+            base, ext = (filename.rsplit('.', 1) + [''])[:2]
+            primary = filename if ext else f"{filename}.json"
+            outdir = os.path.dirname(primary) or 'results'
+            os.makedirs(outdir, exist_ok=True)
+
+            # Write primary JSON (if requested)
+            if data_to_save is None:
+                data_to_save = {
+                    'algorithm_name': self.algorithm_name_,
+                    'best_fitness': float(self.best_fitness_),
+                    'best_solution': self.best_solution_.tolist(),
+                    'global_fitness': [float(x) for x in self.global_fitness_],
+                    'execution_time': float(self.execution_time_),
+                    'parameters': self._serialize_parameters(self.parameters_),
+                    'problem_type': self.problem_type_,
+                    'timestamp': self.timestamp_,
+                    'local_fitness': self.local_fitness_ if self.local_fitness_ is not None else None,
+                    'local_positions': self.local_positions_ if self.local_positions_ is not None else None
+                }
+                if self.problem_type_ == 'feature_selection':
+                    data_to_save['n_selected_features'] = int(self.n_selected_features_)
+                    data_to_save['selected_feature_indices'] = self.selected_feature_indices_.tolist()
+
+            # Save primary JSON using deep serialization to handle numpy types
+            with open(primary, 'w') as f:
+                serial = self._deep_serialize(data_to_save)
                 if format == 'json':
-                    json.dump(data_to_save, f, indent=4)
+                    json.dump(serial, f, indent=4)
                 else:
-                    f.write(json.dumps(data_to_save, indent=4))
-            print(f"Results successfully saved to {filename}")
-            
-            # Also save convergence curve as CSV
-            csv_filename = filename.replace('.json', '_convergence.csv').replace('.txt', '_convergence.csv')
+                    f.write(json.dumps(serial, indent=4))
+
+            # Always save convergence CSV
+            csv_filename = f"{base}_convergence.csv"
             self._save_convergence_csv(csv_filename)
-            
+
+            # Export plots
+            if export_plots:
+                conv_png = f"{base}_convergence.png"
+                self.plot_convergence(save_path=conv_png)
+                if self.local_fitness_ is not None:
+                    local_png = f"{base}_local_mean.png"
+                    # plot_curve expects attribute name
+                    self.plot_curve('local_fitness_', title=f"{self.algorithm_name_} Mean Local Fitness", save_path=local_png)
+
+            # Save training history
+            if save_history and self.local_fitness_ is not None:
+                history_json = f"{base}_history.json"
+                with open(history_json, 'w') as hf:
+                    json.dump(self._deep_serialize({'local_fitness': self.local_fitness_, 'local_positions': self.local_positions_}), hf, indent=4)
+
+            # Optionally save pickled model
+            if save_model:
+                model_file = f"{base}_model.pkl"
+                self.save_model(model_file)
+
+            return primary
         except Exception as e:
-            print(f"Error saving results: {e}")
+            print(f"Error exporting results: {e}")
+            return None
 
     def _save_convergence_csv(self, filename):
         """Save convergence curve as CSV file."""
@@ -151,7 +224,7 @@ class OptimizationModel:
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['iteration', 'best_fitness'])
-                for i, fitness in enumerate(self.convergence_curve):
+                for i, fitness in enumerate(self.global_fitness_):
                     writer.writerow([i+1, float(fitness)])
             print(f"Convergence curve saved to {filename}")
         except Exception as e:
@@ -169,6 +242,23 @@ class OptimizationModel:
                 serialized[key] = value
         return serialized
 
+    def _deep_serialize(self, obj):
+        """Recursively convert numpy arrays and numpy scalars into Python types for JSON dumping."""
+        # numpy array
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        # numpy scalar
+        if isinstance(obj, (np.integer, np.floating, np.bool_)):
+            return obj.item()
+        # dict
+        if isinstance(obj, dict):
+            return {k: self._deep_serialize(v) for k, v in obj.items()}
+        # list/tuple
+        if isinstance(obj, (list, tuple)):
+            return [self._deep_serialize(v) for v in obj]
+        # builtin types
+        return obj
+
     @classmethod
     def load(cls, filename):
         """
@@ -176,16 +266,16 @@ class OptimizationModel:
         """
         with open(filename, 'r') as f:
             data = json.load(f)
-        
-        # Recreate the model object
         model = cls(
-            algorithm_name=data['algorithm_name'],
-            best_solution=data['best_solution'],
-            best_fitness=data['best_fitness'],
-            convergence_curve=data['convergence_curve'],
-            execution_time=data['execution_time'],
-            parameters=data['parameters'],
-            problem_type=data.get('problem_type', 'unknown')
+            algorithm_name=data.get('algorithm_name'),
+            best_solution=data.get('best_solution'),
+            best_fitness=data.get('best_fitness'),
+            global_fitness=data.get('global_fitness', data.get('convergence_curve', [])),
+            execution_time=data.get('execution_time'),
+            parameters=data.get('parameters'),
+            problem_type=data.get('problem_type', 'unknown'),
+            local_fitness=data.get('local_fitness'),
+            local_positions=data.get('local_positions')
         )
         return model
 
@@ -203,7 +293,7 @@ class BaseOptimizer(ABC):
     
     def __init__(self, *args, population_size=30, max_iterations=None, 
                  lower_bound=None, upper_bound=None, dimensions=None, 
-                 verbose=True, **kwargs):
+                 verbose=True, mode=True, **kwargs):
         
         # Handle flexible positional arguments: PSO(15, 100)
         if len(args) >= 1:
@@ -213,28 +303,27 @@ class BaseOptimizer(ABC):
         if len(args) >= 3:
             dimensions = args[2]
             
-        self.population_size = population_size
-        self.max_iterations = max_iterations
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
-        self.dimensions = dimensions
-        self.verbose = verbose
-        self.algorithm_name = self.__class__.__name__
-        
-        # Store any extra parameters
-        self.extra_params = kwargs
+        self.population_size_ = population_size
+        self.max_iterations_ = max_iterations if max_iterations is not None else 100
+        self.lower_bound_ = lower_bound
+        self.upper_bound_ = upper_bound
+        self.dimensions_ = dimensions
+        self.verbose_ = verbose
+        self.mode_ = mode
+        self.algorithm_name_ = self.__class__.__name__
+        self.extra_params_ = kwargs
 
     def get_params(self):
         """Get all parameters of the optimizer."""
         params = {
-            'population_size': self.population_size,
-            'max_iterations': self.max_iterations,
-            'lower_bound': self.lower_bound,
-            'upper_bound': self.upper_bound,
-            'dimensions': self.dimensions,
-            'verbose': self.verbose
+            'population_size': self.population_size_,
+            'max_iterations': self.max_iterations_,
+            'lower_bound': self.lower_bound_,
+            'upper_bound': self.upper_bound_,
+            'dimensions': self.dimensions_,
+            'verbose': self.verbose_
         }
-        params.update(self.extra_params)
+        params.update(getattr(self, 'extra_params_', {}))
         return params
 
     def _initialize_parameters(self, X=None, y=None, objective_function=None):
@@ -243,49 +332,59 @@ class BaseOptimizer(ABC):
         """
         # Determine problem type
         if y is not None and X is not None:
-            self.problem_type = 'feature_selection'
+            self.problem_type_ = 'feature_selection'
         elif objective_function is not None:
-            self.problem_type = 'function_optimization'
+            self.problem_type_ = 'function_optimization'
         else:
             raise ValueError("Either (X, y) for feature selection or objective_function must be provided.")
-
-        # Auto-detect dimensions
-        if self.dimensions is None:
-            if self.problem_type == 'feature_selection':
-                self.dimensions = X.shape[1]
-            elif self.problem_type == 'function_optimization':
-                self.dimensions = 10 # Default for function optimization
-            if self.verbose:
-                print(f"Auto-detected dimensions: {self.dimensions}")
-
-        # Auto-detect bounds
-        if self.lower_bound is None or self.upper_bound is None:
-            if self.problem_type == 'feature_selection':
-                defaults = {'lower_bound': 0.0, 'upper_bound': 1.0}
-            else: # function_optimization
-                defaults = {'lower_bound': -100.0, 'upper_bound': 100.0}
-            
-            self.lower_bound = self.lower_bound if self.lower_bound is not None else defaults['lower_bound']
-            self.upper_bound = self.upper_bound if self.upper_bound is not None else defaults['upper_bound']
-            
-            if self.verbose:
-                print(f"No bounds specified. Using default bounds for {self.problem_type}: [{self.lower_bound}, {self.upper_bound}]")
-
-        # Auto-detect max_iterations
-        if self.max_iterations is None:
-            self.max_iterations = max(100, 10 * self.dimensions)
-            if self.verbose:
-                print(f"Auto-calculated max_iterations: {self.max_iterations}")
-
-        # Format bounds to be arrays
+        if self.dimensions_ is None:
+            if self.problem_type_ == 'feature_selection':
+                self.dimensions_ = X.shape[1]
+            elif self.problem_type_ == 'function_optimization':
+                self.dimensions_ = 10
+            if self.verbose_ and self.mode_:
+                pass # print(f"Auto-detected dimensions: {self.dimensions_}")
+        if self.lower_bound_ is None or self.upper_bound_ is None:
+            if self.problem_type_ == 'feature_selection':
+                defaults = {'lower_bound_': 0.0, 'upper_bound_': 1.0}
+            else:
+                defaults = {'lower_bound_': -100.0, 'upper_bound_': 100.0}
+            self.lower_bound_ = self.lower_bound_ if self.lower_bound_ is not None else defaults['lower_bound_']
+            self.upper_bound_ = self.upper_bound_ if self.upper_bound_ is not None else defaults['upper_bound_']
+            if self.verbose_ and self.mode_:
+                pass # print(f"No bounds specified. Using default bounds for {self.problem_type_}: [{self.lower_bound_}, {self.upper_bound_}]")
         self._format_bounds()
+        def _initialize_parameters(self, X=None, y=None, objective_function=None):
+            if y is not None and X is not None:
+                self.problem_type_ = 'feature_selection'
+            elif objective_function is not None:
+                self.problem_type_ = 'function_optimization'
+            else:
+                raise ValueError("Either (X, y) for feature selection or objective_function must be provided.")
+            if self.dimensions_ is None:
+                if self.problem_type_ == 'feature_selection':
+                    self.dimensions_ = X.shape[1]
+                elif self.problem_type_ == 'function_optimization':
+                    self.dimensions_ = 10
+                if self.verbose_ and self.mode_:
+                    pass # print(f"Auto-detected dimensions: {self.dimensions_}")
+            if self.lower_bound_ is None or self.upper_bound_ is None:
+                if self.problem_type_ == 'feature_selection':
+                    defaults = {'lower_bound_': 0.0, 'upper_bound_': 1.0}
+                else:
+                    defaults = {'lower_bound_': -100.0, 'upper_bound_': 100.0}
+                self.lower_bound_ = self.lower_bound_ if self.lower_bound_ is not None else defaults['lower_bound_']
+                self.upper_bound_ = self.upper_bound_ if self.upper_bound_ is not None else defaults['upper_bound_']
+                if self.verbose_ and self.mode_:
+                    pass # print(f"No bounds specified. Using default bounds for {self.problem_type_}: [{self.lower_bound_}, {self.upper_bound_}]")
+            self._format_bounds()
 
     def _format_bounds(self):
-        """Ensure bounds are numpy arrays of correct dimension."""
-        if not isinstance(self.lower_bound, np.ndarray) or len(self.lower_bound) == 1:
-            self.lower_bound = np.full(self.dimensions, self.lower_bound)
-        if not isinstance(self.upper_bound, np.ndarray) or len(self.upper_bound) == 1:
-            self.upper_bound = np.full(self.dimensions, self.upper_bound)
+        """Ensure bounds are numpy arrays of correct dimension (trailing underscore attributes only)."""
+        if not isinstance(self.lower_bound_, np.ndarray) or np.isscalar(self.lower_bound_):
+            self.lower_bound_ = np.full(self.dimensions_, self.lower_bound_)
+        if not isinstance(self.upper_bound_, np.ndarray) or np.isscalar(self.upper_bound_):
+            self.upper_bound_ = np.full(self.dimensions_, self.upper_bound_)
 
     def _create_objective_function(self, X, y):
         """
@@ -361,38 +460,80 @@ class BaseOptimizer(ABC):
         self._initialize_parameters(X, y, objective_function)
         
         # Run the algorithm-specific optimization
-        best_solution, best_fitness, convergence_curve = self._optimize(
+        best_solution, best_fitness, global_fitness, local_fitness, local_positions = self._optimize(
             objective_function=objective_function, X=X, y=y
         )
-        
+
         end_time = time.time()
         execution_time = end_time - start_time
-        
+
         # Create and return the standardized model object
         model = self._create_model(
-            best_solution, best_fitness, convergence_curve, execution_time, X, y
+            best_solution, best_fitness, global_fitness, execution_time, X, y, local_fitness, local_positions
         )
-        
-        if self.verbose:
+
+        if self.verbose_:
             print(f"\nOptimization finished in {execution_time:.4f} seconds.")
             print(f"Best fitness: {best_fitness:.6f}")
-        
-        return model
 
-    def _create_model(self, best_solution, best_fitness, convergence_curve, 
-                      execution_time, X=None, y=None):
+        return model
+        def optimize(self, problem=None, X=None, y=None, objective_function=None):
+            if problem is not None:
+                objective_function = problem['objective_function']
+                X = problem.get('X')
+                y = problem.get('y')
+                if 'dimensions' in problem:
+                    self.dimensions_ = problem['dimensions']
+                if 'bounds' in problem:
+                    bounds = problem['bounds']
+                    self.lower_bound_ = [b[0] for b in bounds]
+                    self.upper_bound_ = [b[1] for b in bounds]
+            if objective_function is None:
+                raise ValueError("Objective function is required")
+            start_time = time.time()
+            self._initialize_parameters(X, y, objective_function)
+            best_solution, best_fitness, global_fitness, local_fitness, local_positions = self._optimize(
+                objective_function=objective_function, X=X, y=y
+            )
+            end_time = time.time()
+            execution_time = end_time - start_time
+            model = self._create_model(
+                best_solution, best_fitness, global_fitness, execution_time, X, y, local_fitness, local_positions
+            )
+            if self.verbose_ and self.mode_:
+                pass # print(f"\nOptimization finished in {execution_time:.4f} seconds.")
+                pass # print(f"Best fitness: {best_fitness:.6f}")
+            return model
+
+    def _create_model(self, best_solution, best_fitness, global_fitness, execution_time, X=None, y=None, local_fitness=None, local_positions=None):
         """Create and return the OptimizationModel object."""
         return OptimizationModel(
-            algorithm_name=self.algorithm_name,
+            algorithm_name=self.algorithm_name_,
             best_solution=best_solution,
             best_fitness=best_fitness,
-            convergence_curve=convergence_curve,
+            global_fitness=global_fitness,
             execution_time=execution_time,
             parameters=self.get_params(),
-            problem_type=getattr(self, 'problem_type', 'unknown'),
+            problem_type=getattr(self, 'problem_type_', 'unknown'),
             X_data=X,
-            y_data=y
+            y_data=y,
+            local_fitness=local_fitness,
+            local_positions=local_positions
         )
+        def _create_model(self, best_solution, best_fitness, global_fitness, execution_time, X=None, y=None, local_fitness=None, local_positions=None):
+            return OptimizationModel(
+                algorithm_name=self.algorithm_name_,
+                best_solution=best_solution,
+                best_fitness=best_fitness,
+                global_fitness=global_fitness,
+                execution_time=execution_time,
+                parameters=self.get_params(),
+                problem_type=getattr(self, 'problem_type_', 'unknown'),
+                X_data=X,
+                y_data=y,
+                local_fitness=local_fitness,
+                local_positions=local_positions
+            )
 
     @abstractmethod
     def _optimize(self, objective_function, **kwargs):
@@ -409,3 +550,15 @@ class BaseOptimizer(ABC):
             (best_solution, best_fitness, convergence_curve)
         """
         pass
+        @abstractmethod
+        def _optimize(self, objective_function, **kwargs):
+            """
+            Core optimization logic for the specific algorithm.
+            This method must be implemented by all subclasses. It should contain
+            the main loop of the algorithm and return:
+            Returns
+            -------
+            tuple
+                (best_solution, best_fitness, global_fitness, local_fitness, local_positions)
+            """
+            pass

@@ -36,49 +36,33 @@ class FireflyAlgorithm(BaseOptimizer):
         self.gamma = gamma
         self.algorithm_name = "FA"
     
-    def _optimize(self, objective_function, **kwargs):
-        """FA optimization implementation"""
-        # Initialize population
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
         population = np.random.uniform(
-            self.lower_bound, self.upper_bound,
-            (self.population_size, self.dimensions)
+            self.lower_bound_, self.upper_bound_,
+            (self.population_size_, self.dimensions_)
         )
-        
-        # Calculate fitness for all fireflies
         fitness = np.array([objective_function(ind) for ind in population])
-        
-        convergence_curve = []
-        
-        for iteration in range(self.max_iterations):
-            # Update fireflies
-            for i in range(self.population_size):
-                for j in range(self.population_size):
-                    if fitness[j] < fitness[i]:  # j is brighter than i
-                        # Calculate distance
+        global_fitness = []
+        local_fitness = []
+        local_positions = []
+        for iteration in range(self.max_iterations_):
+            fitnesses = []
+            positions = []
+            for i in range(self.population_size_):
+                for j in range(self.population_size_):
+                    if fitness[j] < fitness[i]:
                         r = np.linalg.norm(population[i] - population[j])
-                        
-                        # Calculate attractiveness
                         beta = self.beta_0 * np.exp(-self.gamma * r**2)
-                        
-                        # Move firefly i towards j
                         population[i] += beta * (population[j] - population[i]) + \
-                                       self.alpha * (np.random.random(self.dimensions) - 0.5)
-                
-                # Apply bounds
-                population[i] = np.clip(population[i], self.lower_bound, self.upper_bound)
-                
-                # Update fitness
+                                       self.alpha * (np.random.random(self.dimensions_) - 0.5)
+                population[i] = np.clip(population[i], self.lower_bound_, self.upper_bound_)
                 fitness[i] = objective_function(population[i])
-            
-            # Find best firefly
+                fitnesses.append(fitness[i])
+                positions.append(population[i].copy())
             best_idx = np.argmin(fitness)
-            convergence_curve.append(fitness[best_idx])
-            
-            if self.verbose and (iteration + 1) % 10 == 0:
-                print(f"Iteration {iteration + 1}/{self.max_iterations}, Best Fitness: {fitness[best_idx]:.6f}")
-            
-            # Reduce alpha (randomization parameter)
+            global_fitness.append(fitness[best_idx])
+            local_fitness.append(fitnesses)
+            local_positions.append(positions)
             self.alpha *= 0.98
-        
         best_idx = np.argmin(fitness)
-        return population[best_idx], fitness[best_idx], convergence_curve
+        return population[best_idx], fitness[best_idx], global_fitness, local_fitness, local_positions

@@ -34,65 +34,46 @@ class DifferentialEvolution(BaseOptimizer):
         self.F = F
         self.CR = CR
         self.strategy = strategy
-        self.algorithm_name = "DE"
     
-    def _optimize(self, objective_function, **kwargs):
-        """DE optimization implementation"""
-        # Initialize population
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
         population = np.random.uniform(
-            self.lower_bound, self.upper_bound,
-            (self.population_size, self.dimensions)
+            self.lower_bound_, self.upper_bound_,
+            (self.population_size_, self.dimensions_)
         )
-        
-        # Evaluate initial population
         fitness = np.array([objective_function(ind) for ind in population])
-        
-        convergence_curve = []
-        
-        for iteration in range(self.max_iterations):
-            for i in range(self.population_size):
-                # Mutation
+        global_fitness = []
+        local_fitness = []
+        local_positions = []
+        for iteration in range(self.max_iterations_):
+            fitnesses = []
+            positions = []
+            for i in range(self.population_size_):
                 if self.strategy == 'rand/1/bin':
-                    # Select three random vectors (different from current)
-                    candidates = list(range(self.population_size))
+                    candidates = list(range(self.population_size_))
                     candidates.remove(i)
                     r1, r2, r3 = np.random.choice(candidates, 3, replace=False)
-                    
-                    # Create mutant vector
                     mutant = population[r1] + self.F * (population[r2] - population[r3])
-                
                 elif self.strategy == 'best/1/bin':
-                    # Use best individual
                     best_idx = np.argmin(fitness)
-                    candidates = list(range(self.population_size))
+                    candidates = list(range(self.population_size_))
                     candidates.remove(i)
                     r1, r2 = np.random.choice(candidates, 2, replace=False)
-                    
                     mutant = population[best_idx] + self.F * (population[r1] - population[r2])
-                
-                # Apply bounds to mutant
-                mutant = np.clip(mutant, self.lower_bound, self.upper_bound)
-                
-                # Crossover
+                mutant = np.clip(mutant, self.lower_bound_, self.upper_bound_)
                 trial = population[i].copy()
-                j_rand = np.random.randint(0, self.dimensions)
-                
-                for j in range(self.dimensions):
+                j_rand = np.random.randint(0, self.dimensions_)
+                for j in range(self.dimensions_):
                     if np.random.random() < self.CR or j == j_rand:
                         trial[j] = mutant[j]
-                
-                # Selection
                 trial_fitness = objective_function(trial)
                 if trial_fitness < fitness[i]:
                     population[i] = trial
                     fitness[i] = trial_fitness
-            
-            # Record best fitness
+                fitnesses.append(fitness[i])
+                positions.append(population[i].copy())
             best_fitness = np.min(fitness)
-            convergence_curve.append(best_fitness)
-            
-            if self.verbose and (iteration + 1) % 10 == 0:
-                print(f"Iteration {iteration + 1}/{self.max_iterations}, Best Fitness: {best_fitness:.6f}")
-        
+            global_fitness.append(best_fitness)
+            local_fitness.append(fitnesses)
+            local_positions.append(positions)
         best_idx = np.argmin(fitness)
-        return population[best_idx], fitness[best_idx], convergence_curve
+        return population[best_idx], fitness[best_idx], global_fitness, local_fitness, local_positions

@@ -58,103 +58,54 @@ class SineCosinAlgorithm(BaseOptimizer):
         self.algorithm_name = "SineCosinAlgorithm"
     
     def _optimize(self, objective_function, X=None, y=None, **kwargs):
-        """
-        Implement the Sine Cosine Algorithm optimization with automatic parameter calculation.
-        
-        Parameters
-        ----------
-        objective_function : callable
-            The function to optimize
-        X : array-like, optional
-            Feature matrix for feature selection problems
-        y : array-like, optional
-            Target values for feature selection problems
-        **kwargs : dict
-            Additional algorithm-specific parameters
-            
-        Returns
-        -------
-        None
-        """
-        # Automatically determine problem type and set bounds/dimensions
         if X is not None:
-            # Feature selection problem
-            self.dimensions = X.shape[1]
-            self.lower_bound = np.zeros(self.dimensions)
-            self.upper_bound = np.ones(self.dimensions)
+            self.dimensions_ = X.shape[1]
+            self.lower_bound_ = np.zeros(self.dimensions_)
+            self.upper_bound_ = np.ones(self.dimensions_)
         else:
-            # Function optimization problem
-            if not hasattr(self, 'dimensions') or self.dimensions is None:
-                self.dimensions = kwargs.get('dimensions', 10)
-            
-            # Set bounds if not already set
-            if not hasattr(self, 'lower_bound') or self.lower_bound is None:
+            if not hasattr(self, 'dimensions_') or self.dimensions_ is None:
+                self.dimensions_ = kwargs.get('dimensions', 10)
+            if not hasattr(self, 'lower_bound_') or self.lower_bound_ is None:
                 lb = kwargs.get('lower_bound', kwargs.get('lb', -10.0))
-                self.lower_bound = np.full(self.dimensions, lb) if np.isscalar(lb) else np.array(lb)
-            
-            if not hasattr(self, 'upper_bound') or self.upper_bound is None:
+                self.lower_bound_ = np.full(self.dimensions_, lb) if np.isscalar(lb) else np.array(lb)
+            if not hasattr(self, 'upper_bound_') or self.upper_bound_ is None:
                 ub = kwargs.get('upper_bound', kwargs.get('ub', 10.0))
-                self.upper_bound = np.full(self.dimensions, ub) if np.isscalar(ub) else np.array(ub)
-        
-        # Initialize population randomly within the bounds
+                self.upper_bound_ = np.full(self.dimensions_, ub) if np.isscalar(ub) else np.array(ub)
         positions = np.random.uniform(
-            low=self.lower_bound, 
-            high=self.upper_bound, 
-            size=(self.population_size, self.dimensions)
+            low=self.lower_bound_, 
+            high=self.upper_bound_, 
+            size=(self.population_size_, self.dimensions_)
         )
-        
-        # Initialize destination (best solution found so far)
-        self.best_solution = np.zeros(self.dimensions)
-        self.best_fitness = float('inf')
-        
-        # Initialize convergence curve
-        self.convergence_curve = np.zeros(self.max_iterations)
-        
-        # Main loop
-        for t in range(self.max_iterations):
-            # Evaluate each search agent
-            for i in range(self.population_size):
-                # Calculate objective function for current position
+        best_solution = np.zeros(self.dimensions_)
+        best_fitness = float('inf')
+        global_fitness = []
+        local_fitness = []
+        local_positions = []
+        for t in range(self.max_iterations_):
+            fitnesses = []
+            positions_snapshot = []
+            for i in range(self.population_size_):
                 fitness = objective_function(positions[i, :])
-                
-                # Update the destination if better solution found
-                if fitness < self.best_fitness:
-                    self.best_fitness = fitness
-                    self.best_solution = positions[i, :].copy()
-            
-            # Update parameter r1 (decreases linearly from a to 0)
-            r1 = self.a - t * (self.a / self.max_iterations)
-            
-            # Update the position of each search agent
-            for i in range(self.population_size):
-                for j in range(self.dimensions):
-                    # Generate random parameters
-                    r2 = (2 * np.pi) * np.random.rand()  # random number in [0, 2π]
-                    r3 = 2 * np.random.rand()           # random number in [0, 2]
-                    r4 = np.random.rand()               # random number in [0, 1]
-                    
-                    # Update position using sine or cosine based on r4
+                fitnesses.append(fitness)
+                positions_snapshot.append(positions[i, :].copy())
+                if fitness < best_fitness:
+                    best_fitness = fitness
+                    best_solution = positions[i, :].copy()
+            r1 = self.a - t * (self.a / self.max_iterations_)
+            for i in range(self.population_size_):
+                for j in range(self.dimensions_):
+                    r2 = (2 * np.pi) * np.random.rand()
+                    r3 = 2 * np.random.rand()
+                    r4 = np.random.rand()
                     if r4 < 0.5:
-                        # Sine update
-                        positions[i, j] += (r1 * np.sin(r2) * 
-                                          abs(r3 * self.best_solution[j] - positions[i, j]))
+                        positions[i, j] += (r1 * np.sin(r2) * abs(r3 * best_solution[j] - positions[i, j]))
                     else:
-                        # Cosine update
-                        positions[i, j] += (r1 * np.cos(r2) * 
-                                          abs(r3 * self.best_solution[j] - positions[i, j]))
-            
-            # Apply bounds
-            positions = np.clip(positions, self.lower_bound, self.upper_bound)
-            
-            # Save best fitness for this iteration
-            self.convergence_curve[t] = self.best_fitness
-            
-            # Print progress if verbose
-            if self.verbose and (t + 1) % 10 == 0:
-                print(f"Iteration {t + 1}/{self.max_iterations}, Best Fitness: {self.best_fitness:.6f}")
-        
-        # Return the required tuple: (best_solution, best_fitness, convergence_curve)
-        return self.best_solution, self.best_fitness, self.convergence_curve.tolist()
+                        positions[i, j] += (r1 * np.cos(r2) * abs(r3 * best_solution[j] - positions[i, j]))
+            positions = np.clip(positions, self.lower_bound_, self.upper_bound_)
+            global_fitness.append(best_fitness)
+            local_fitness.append(fitnesses)
+            local_positions.append(positions_snapshot)
+        return best_solution, best_fitness, global_fitness, local_fitness, local_positions
 
 
 # Provide a function-based interface for backward compatibility

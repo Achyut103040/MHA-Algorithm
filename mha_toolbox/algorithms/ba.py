@@ -38,70 +38,44 @@ class BatAlgorithm(BaseOptimizer):
         self.f_max = f_max
         self.algorithm_name = "BA"
     
-    def _optimize(self, objective_function, **kwargs):
-        """BA optimization implementation"""
-        # Initialize population
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
         population = np.random.uniform(
-            self.lower_bound, self.upper_bound,
-            (self.population_size, self.dimensions)
+            self.lower_bound_, self.upper_bound_,
+            (self.population_size_, self.dimensions_)
         )
-        
-        # Initialize velocities
-        velocity = np.zeros((self.population_size, self.dimensions))
-        
-        # Initialize frequency, loudness and pulse rate
-        frequency = np.zeros(self.population_size)
-        A = np.full(self.population_size, self.A)
-        r = np.full(self.population_size, self.r)
-        
-        # Calculate fitness for all bats
+        velocity = np.zeros((self.population_size_, self.dimensions_))
+        frequency = np.zeros(self.population_size_)
+        A = np.full(self.population_size_, self.A)
+        r = np.full(self.population_size_, self.r)
         fitness = np.array([objective_function(ind) for ind in population])
-        
-        # Find the best solution
         best_idx = np.argmin(fitness)
         best_bat = population[best_idx].copy()
         best_fitness = fitness[best_idx]
-        
-        convergence_curve = []
-        
-        for iteration in range(self.max_iterations):
-            for i in range(self.population_size):
-                # Update frequency
+        global_fitness = []
+        local_fitness = []
+        local_positions = []
+        for iteration in range(self.max_iterations_):
+            fitnesses = []
+            positions = []
+            for i in range(self.population_size_):
                 frequency[i] = self.f_min + (self.f_max - self.f_min) * np.random.random()
-                
-                # Update velocity
                 velocity[i] += (population[i] - best_bat) * frequency[i]
-                
-                # Update position
                 new_position = population[i] + velocity[i]
-                
-                # Apply local search around the best solution
                 if np.random.random() > r[i]:
-                    new_position = best_bat + 0.001 * np.random.randn(self.dimensions)
-                
-                # Apply bounds
-                new_position = np.clip(new_position, self.lower_bound, self.upper_bound)
-                
-                # Evaluate new solution
+                    new_position = best_bat + 0.001 * np.random.randn(self.dimensions_)
+                new_position = np.clip(new_position, self.lower_bound_, self.upper_bound_)
                 new_fitness = objective_function(new_position)
-                
-                # Accept new solution if it's better and within loudness
                 if new_fitness < fitness[i] and np.random.random() < A[i]:
                     population[i] = new_position.copy()
                     fitness[i] = new_fitness
-                    
-                    # Update loudness and pulse rate
                     A[i] *= 0.9
                     r[i] = self.r * (1 - np.exp(-0.9 * iteration))
-                    
-                    # Update best solution
                     if new_fitness < best_fitness:
                         best_bat = new_position.copy()
                         best_fitness = new_fitness
-            
-            convergence_curve.append(best_fitness)
-            
-            if self.verbose and (iteration + 1) % 10 == 0:
-                print(f"Iteration {iteration + 1}/{self.max_iterations}, Best Fitness: {best_fitness:.6f}")
-        
-        return best_bat, best_fitness, convergence_curve
+                fitnesses.append(fitness[i])
+                positions.append(population[i].copy())
+            global_fitness.append(best_fitness)
+            local_fitness.append(fitnesses)
+            local_positions.append(positions)
+        return best_bat, best_fitness, global_fitness, local_fitness, local_positions
