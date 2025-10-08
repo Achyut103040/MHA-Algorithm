@@ -984,7 +984,7 @@ def display_overview(toolbox):
         color_continuous_scale='RdYlGn_r'
     )
     fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="overview_performance_chart")
 
 def display_convergence_plots(toolbox):
     """Display convergence plots"""
@@ -1016,7 +1016,7 @@ def display_convergence_plots(toolbox):
         hovermode='x unified'
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="convergence_plots_chart")
     
     # Box plot for fitness distribution
     st.subheader("📦 Fitness Distribution Across Runs")
@@ -1037,7 +1037,7 @@ def display_convergence_plots(toolbox):
         title="Fitness Distribution (All Runs)"
     )
     fig_box.update_layout(height=400)
-    st.plotly_chart(fig_box, use_container_width=True)
+    st.plotly_chart(fig_box, use_container_width=True, key="fitness_distribution_box_chart")
 
 def display_detailed_statistics(toolbox):
     """Display detailed statistical analysis"""
@@ -1093,7 +1093,7 @@ def display_detailed_statistics(toolbox):
             title="Features vs Accuracy Trade-off"
         )
         fig_scatter.update_layout(height=400)
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter_chart")
 
 def save_comprehensive_results(toolbox, auto_save=True):
     """Save comprehensive results with all data including models - ALWAYS saves to backend"""
