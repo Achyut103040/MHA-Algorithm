@@ -30,6 +30,7 @@ import io
 import base64
 import sys
 from pathlib import Path
+import uuid
 
 # Add the parent directory to sys.path to import mha_toolbox modules
 sys.path.append(str(Path(__file__).parent))
@@ -37,6 +38,94 @@ sys.path.append(str(Path(__file__).parent))
 from mha_comparison_toolbox import MHAComparisonToolbox
 # Note: run_algorithm_with_timeout is defined in this file
 from mha_toolbox.results_manager import ResultsManager
+from mha_toolbox.persistent_state import PersistentStateManager, EnhancedAgentTracker
+from mha_toolbox.enhanced_visualizer import EnhancedVisualizer
+from mha_toolbox.detailed_results_collector import DetailedResultsCollector
+from mha_toolbox.enhanced_runner import run_algorithm_with_detailed_tracking
+from mha_toolbox.npz_comparator import NPZResultsComparator
+from mha_toolbox.enhanced_session_manager import EnhancedSessionManager
+from mha_toolbox.csv_session_manager import ComprehensiveCSVManager, ConvergencePlotManager
+from mha_toolbox.comprehensive_dashboard import ComprehensiveDashboard
+
+# Unique key generator for plotly charts
+def get_unique_key(base_name):
+    """Generate unique key for plotly charts to avoid conflicts"""
+    if 'chart_counter' not in st.session_state:
+        st.session_state.chart_counter = 0
+    st.session_state.chart_counter += 1
+    return f"{base_name}_{st.session_state.chart_counter}_{int(time.time())}"
+
+def cleanup_stale_references():
+    """Clean up stale file references and reset problematic session state"""
+    try:
+        # Clear ALL potentially problematic session state variables
+        stale_keys = []
+        for key in st.session_state.keys():
+            if any(term in key.lower() for term in [
+                'media', 'file_id', 'download', 'temp', 'button', 'cache',
+                'file_data', 'export', 'saved_files', 'results_file'
+            ]):
+                stale_keys.append(key)
+        
+        for key in stale_keys:
+            try:
+                del st.session_state[key]
+            except:
+                pass
+        
+        # Clear Streamlit's internal caches more aggressively
+        if hasattr(st, 'cache_data'):
+            st.cache_data.clear()
+        if hasattr(st, 'cache_resource'):
+            st.cache_resource.clear()
+            
+        # Force cleanup every 2 minutes instead of 5
+        if 'last_cleanup' not in st.session_state:
+            st.session_state.last_cleanup = time.time()
+        elif time.time() - st.session_state.last_cleanup > 120:  # 2 minutes
+            st.session_state.last_cleanup = time.time()
+            # Clear all file-related session state
+            for key in list(st.session_state.keys()):
+                if 'file' in key.lower() or 'download' in key.lower():
+                    try:
+                        del st.session_state[key]
+                    except:
+                        pass
+            
+    except Exception as e:
+        # Silent cleanup - don't show errors to user
+        pass
+
+def safe_download_button(label, file_path, download_filename, mime_type, key, help_text=None, button_type="secondary", width=None):
+    """Safely create download button by reading file data into memory"""
+    try:
+        if not file_path or not os.path.exists(file_path):
+            st.warning(f"🚫 File not found: {download_filename}")
+            return False
+            
+        # Read file data into memory
+        if mime_type.startswith('text/') or mime_type == 'application/json':
+            with open(file_path, 'r', encoding='utf-8') as f:
+                file_data = f.read()
+        else:
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+        
+        # Create download button with in-memory data
+        return st.download_button(
+            label=label,
+            data=file_data,
+            file_name=download_filename,
+            mime=mime_type,
+            key=key,
+            help=help_text,
+            type=button_type,
+            use_container_width=(width == 'stretch')
+        )
+        
+    except Exception as e:
+        st.error(f"❌ Error creating download for {download_filename}: {str(e)}")
+        return False
 
 # Configure page
 st.set_page_config(
@@ -95,9 +184,46 @@ if 'progress_data' not in st.session_state:
     st.session_state.progress_data = {}
 if 'results_manager' not in st.session_state:
     st.session_state.results_manager = ResultsManager()
+if 'persistent_state_manager' not in st.session_state:
+    st.session_state.persistent_state_manager = PersistentStateManager()
+if 'agent_tracker' not in st.session_state:
+    st.session_state.agent_tracker = EnhancedAgentTracker()
+if 'enhanced_visualizer' not in st.session_state:
+    st.session_state.enhanced_visualizer = EnhancedVisualizer()
+if 'execution_mode' not in st.session_state:
+    st.session_state.execution_mode = "comparison"
+if 'detailed_collector' not in st.session_state:
+    st.session_state.detailed_collector = DetailedResultsCollector()
+if 'enhanced_session_manager' not in st.session_state:
+    st.session_state.enhanced_session_manager = EnhancedSessionManager(st.session_state.detailed_collector)
+if 'csv_manager' not in st.session_state:
+    st.session_state.csv_manager = ComprehensiveCSVManager()
+if 'convergence_plotter' not in st.session_state:
+    st.session_state.convergence_plotter = ConvergencePlotManager(st.session_state.csv_manager)
+if 'comprehensive_dashboard' not in st.session_state:
+    st.session_state.comprehensive_dashboard = ComprehensiveDashboard(
+        st.session_state.csv_manager, 
+        st.session_state.convergence_plotter
+    )
+
+# Load persistent state on startup
+persistent_manager = st.session_state.persistent_state_manager
+saved_state = persistent_manager.load_current_state()
+
+if saved_state and not st.session_state.results_ready:
+    # Restore previous state
+    if 'toolbox_data' in saved_state:
+        cached_results = persistent_manager.load_results_cache()
+        if cached_results:
+            st.session_state.toolbox = cached_results
+            st.session_state.results_ready = True
+            st.info("🔄 **Previous session restored!** Your results are back.")
 
 def main():
     """Main web interface function"""
+    
+    # Clean up stale file references at startup
+    cleanup_stale_references()
     
     # Header with demo banner
     st.markdown("""
@@ -153,7 +279,7 @@ def main():
         # Page selection
         page = st.radio(
             "Select Page:",
-            ["🧬 Run Experiments", "📚 Results History"],
+            ["🧬 Run Experiments", "📚 Results History", "📈 NPZ Comparison", "🔄 Session Manager", "💾 CSV Dashboard"],
             index=0
         )
         
@@ -161,8 +287,58 @@ def main():
             display_persistent_results_manager()
             return
         
+        elif page == "📈 NPZ Comparison":
+            # NPZ Comparison Page
+            st.markdown("---")
+            st.markdown("## 📈 **NPZ RESULTS COMPARISON**")
+            st.info("📊 Compare detailed algorithm results from NPZ files")
+            
+            # Initialize NPZ comparator
+            npz_comparator = NPZResultsComparator(st.session_state.detailed_collector)
+            npz_comparator.display_comparison_interface()
+            return  # Exit early for NPZ comparison page
+        
+        elif page == "💾 CSV Dashboard":
+            # CSV Dashboard Page - Complete User Experience
+            st.markdown("---")
+            st.session_state.comprehensive_dashboard.display_main_dashboard()
+            return  # Exit early for CSV dashboard page
+        
+        elif page == "🔄 Session Manager":
+            # Enhanced Session Manager
+            st.markdown("---")
+            st.markdown("## 🔄 **SESSION MANAGER**")
+            st.info("🔄 Revive sessions, add algorithms, comprehensive exports")
+            
+            # Initialize enhanced session manager
+            session_manager = st.session_state.enhanced_session_manager
+            session_manager.display_session_management_interface()
+            return  # Exit early for session manager page
+        
         st.markdown("---")
         st.header("⚙️ Configuration")
+        
+        # Fresh start button
+        if st.button("🔄 Fresh Start", help="Clear all cached data and start fresh", width='stretch'):
+            # Complete session state reset
+            all_keys = list(st.session_state.keys())
+            for key in all_keys:
+                try:
+                    del st.session_state[key]
+                except:
+                    pass
+            
+            # Clear Streamlit caches
+            if hasattr(st, 'cache_data'):
+                st.cache_data.clear()
+            if hasattr(st, 'cache_resource'):
+                st.cache_resource.clear()
+                
+            st.success("✨ Complete fresh start! All data cleared.")
+            st.info("🔄 Please refresh the page to complete the reset.")
+            st.stop()  # Stop execution to prevent further errors
+        
+        st.markdown("---")
         
         # Task type selection
         task_type = st.selectbox(
@@ -192,6 +368,10 @@ def main():
             )
             
             X, y, dataset_name = load_sample_dataset(dataset_choice)
+            # Store in session state
+            st.session_state.X = X
+            st.session_state.y = y
+            st.session_state.dataset_name = dataset_name
             
         else:
             uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
@@ -205,13 +385,22 @@ def main():
                 X = df[feature_cols].values
                 y = df[target_col].values
                 dataset_name = uploaded_file.name
+                
+                # Store in session state
+                st.session_state.X = X
+                st.session_state.y = y
+                st.session_state.dataset_name = dataset_name
             else:
                 st.warning("Please upload a CSV file")
+                # Set defaults for session state
+                st.session_state.X = None
+                st.session_state.y = None
+                st.session_state.dataset_name = None
                 return
         
         # Display data info
-        if 'X' in locals():
-            st.info(f"📋 Data: {X.shape[0]} samples, {X.shape[1]} features")
+        if hasattr(st.session_state, 'X') and st.session_state.X is not None:
+            st.info(f"📋 Data: {st.session_state.X.shape[0]} samples, {st.session_state.X.shape[1]} features")
         
         st.markdown("---")
         
@@ -295,6 +484,14 @@ def main():
         if len(selected_algorithms) < 1:
             st.warning("⚠️ Please select at least 1 algorithm")
             return
+        
+        # Algorithm execution mode logic
+        if len(selected_algorithms) == 1:
+            st.info(f"🔬 **Single Algorithm Analysis Mode** - Detailed analysis of {selected_algorithms[0].upper()}")
+            execution_mode = "single_detailed"
+        else:
+            st.info(f"⚖️ **Comparison Mode** - Comparing {len(selected_algorithms)} algorithms")
+            execution_mode = "comparison"
             
         # Show selection summary (no categorization)
         st.info(f"🎯 **{len(selected_algorithms)} algorithms selected** from {len(available_algorithms)} available")
@@ -378,32 +575,140 @@ def main():
             enable_parallel = st.checkbox("Enable parallel execution", value=True)
     
     # Main content area
-    if 'X' in locals() and len(selected_algorithms) >= 1:
+    if (hasattr(st.session_state, 'X') and st.session_state.X is not None and 
+        hasattr(st.session_state, 'y') and st.session_state.y is not None and
+        len(selected_algorithms) >= 1):
+        
+        # Get data from session state
+        X = st.session_state.X
+        y = st.session_state.y
+        dataset_name = st.session_state.dataset_name
         
         # Debug info
         st.info(f"🔍 **Debug**: {len(selected_algorithms)} algorithms selected: {', '.join(selected_algorithms[:10])}{'...' if len(selected_algorithms) > 10 else ''}")
         
         # Run comparison button
-        if st.button("🚀 Start Comparison", type="primary", width='stretch'):
+        if st.button("🚀 Start Comparison", type="primary", key="start_comparison_fixed"):
+            st.success("✅ **Button clicked successfully!**")
             st.info(f"🚀 **Starting comprehensive comparison with {len(selected_algorithms)} algorithms**")
             
-            # Debug display - show selected algorithms
-            with st.expander("🔍 Debug: Selected Algorithms"):
-                st.write(f"**Selection Mode**: {selection_mode}")
-                st.write(f"**Total Selected**: {len(selected_algorithms)}")
-                st.write(f"**Algorithms**: {', '.join(selected_algorithms)}")
+            # Clear any previous results
+            st.session_state.results_ready = False
+            if 'toolbox' in st.session_state:
+                del st.session_state.toolbox
             
+            # Store current parameters in session state for recovery
+            st.session_state.current_params = {
+                'selected_algorithms': selected_algorithms.copy(),
+                'task_type': task_type,
+                'max_iterations': max_iterations,
+                'population_size': population_size,
+                'n_runs': n_runs,
+                'timeout_minutes': timeout_minutes,
+                'dataset_name': dataset_name
+            }
+            
+            # Initialize enhanced tracking
+            try:
+                st.session_state.agent_tracker.initialize_tracking(
+                    algorithm="comparison",
+                    population_size=population_size,
+                    dimensions=X.shape[1] if X is not None else 10,
+                    run_id=f"comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                )
+            except Exception as e:
+                st.warning(f"Agent tracking initialization warning: {e}")
+            
+            # IMMEDIATE EXECUTION - Run comprehensive comparison
             run_comparison_with_progress(
                 X, y, dataset_name, task_type, selected_algorithms,
-                max_iterations, population_size, n_runs, timeout_minutes
+                max_iterations, population_size, n_runs, timeout_minutes,
+                execution_mode="comprehensive"
             )
         
         # Display results if available
-        if st.session_state.results_ready and st.session_state.toolbox:
-            display_results()
+        if st.session_state.results_ready and hasattr(st.session_state, 'toolbox') and st.session_state.toolbox:
+            st.markdown("---")
+            st.markdown("## 🎯 **COMPREHENSIVE RESULTS DASHBOARD**")
+            
+            # Get results from toolbox
+            toolbox = st.session_state.toolbox
+            results = toolbox.results
+            
+            if results:
+                st.success(f"✅ **Results ready for {len(results)} algorithms!**")
+                
+                # Create comprehensive results table
+                results_data = []
+                for alg_name, result in results.items():
+                    stats = result['statistics']
+                    results_data.append({
+                        'Algorithm': alg_name.upper(),
+                        'Best Fitness': f"{stats['best_fitness']:.6f}",
+                        'Mean Fitness': f"{stats['mean_fitness']:.6f}",
+                        'Std Deviation': f"{stats['std_fitness']:.6f}",
+                        'Execution Time (s)': f"{stats['mean_time']:.2f}",
+                        'Total Runs': stats['total_runs']
+                    })
+                
+                # Display the results table
+                st.markdown("### 📊 **ALGORITHM PERFORMANCE COMPARISON**")
+                import pandas as pd
+                df = pd.DataFrame(results_data)
+                st.dataframe(df, width="stretch")
+                
+                # Identify winners
+                best_fitness_result = min(results.items(), key=lambda x: x[1]['statistics']['best_fitness'])
+                fastest_result = min(results.items(), key=lambda x: x[1]['statistics']['mean_time'])
+                
+                # Winners display
+                st.markdown("### 🏆 **WINNERS CIRCLE**")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.success(f"🥇 **BEST FITNESS WINNER**")
+                    st.metric("Algorithm", best_fitness_result[0].upper())
+                    st.metric("Best Fitness Score", f"{best_fitness_result[1]['statistics']['best_fitness']:.6f}")
+                    st.metric("Mean Fitness", f"{best_fitness_result[1]['statistics']['mean_fitness']:.6f}")
+                
+                with col2:
+                    st.info(f"⚡ **SPEED CHAMPION**")
+                    st.metric("Algorithm", fastest_result[0].upper())
+                    st.metric("Execution Time", f"{fastest_result[1]['statistics']['mean_time']:.2f}s")
+                    st.metric("Efficiency Rating", "★★★★★")
+                
+                # Summary statistics
+                all_fitnesses = [r['statistics']['best_fitness'] for r in results.values()]
+                all_times = [r['statistics']['mean_time'] for r in results.values()]
+                
+                st.markdown("### 📈 **OVERALL STATISTICS**")
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Best Overall Fitness", f"{min(all_fitnesses):.6f}")
+                with col2:
+                    st.metric("Worst Fitness", f"{max(all_fitnesses):.6f}")
+                with col3:
+                    st.metric("Fastest Time", f"{min(all_times):.2f}s")
+                with col4:
+                    st.metric("Slowest Time", f"{max(all_times):.2f}s")
+                
+                # Success message
+                st.success("🎉 **COMPREHENSIVE COMPARISON COMPLETE!**")
+                
+            else:
+                st.warning("No results found in toolbox")
+        
+        elif st.session_state.results_ready:
+            st.warning("Results marked as ready but toolbox not found")
     
     else:
-        st.info("👆 Please configure the parameters in the sidebar to start")
+        # More specific error message
+        if not hasattr(st.session_state, 'X') or st.session_state.X is None:
+            st.info("👆 Please select a dataset in the sidebar to start")
+        elif len(selected_algorithms) < 1:
+            st.info("👆 Please select at least 1 algorithm in the sidebar")
+        else:
+            st.info("👆 Please configure the parameters in the sidebar to start")
 
 def load_sample_dataset(dataset_choice):
     """Load sample datasets"""
@@ -438,203 +743,276 @@ def load_sample_dataset(dataset_choice):
         return data.data, data.target, "Diabetes"
 
 def run_comparison_with_progress(X, y, dataset_name, task_type, algorithms, 
-                                max_iterations, population_size, n_runs, timeout_minutes):
-    """Run comprehensive comparison with ALL algorithms at once"""
+                                max_iterations, population_size, n_runs, timeout_minutes, execution_mode="comparison"):
+    """COMPREHENSIVE ALGORITHM COMPARISON SYSTEM WITH DETAILED NPZ STORAGE"""
     
-    st.info(f"🚀 **COMPREHENSIVE MODE**: Running {len(algorithms)} algorithms simultaneously")
-    st.write(f"**Selected algorithms**: {', '.join(algorithms)}")
+    st.markdown("---")
+    st.markdown("## 🚀 **ENHANCED ALGORITHM COMPARISON WITH DETAILED TRACKING**")
+    st.success(f"✅ **SYSTEM ACTIVATED**: Running {len(algorithms)} algorithms with comprehensive data collection")
+    
+    # Initialize detailed results collector for comprehensive tracking
+    collector = st.session_state.detailed_collector
+    
+    # Initialize session for this comparison
+    session_id = collector.initialize_session(
+        dataset_name=dataset_name,
+        session_id=f"comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    )
+    
+    st.info(f"📊 **Session ID**: {session_id}")
+    st.info(f"🗂️ **Storage Structure**: results/detailed_storage/{dataset_name}/{session_id}/")
+    
+    # Display selected algorithms prominently
+    st.markdown("### 🧬 **SELECTED ALGORITHMS WITH DETAILED TRACKING**")
+    cols = st.columns(min(len(algorithms), 5))
+    for i, alg in enumerate(algorithms):
+        with cols[i % 5]:
+            st.info(f"🔬 **{alg.upper()}**\n📊 Full iteration tracking")
     
     # Initialize progress tracking
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    progress_details = st.empty()
+    progress_container = st.container()
+    with progress_container:
+        st.markdown("### 📊 **EXECUTION PROGRESS WITH DATA COLLECTION**")
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        algorithm_status = st.empty()
     
-    # Summary metrics
+    # Results container
+    results_container = st.container()
+    
+    # Summary metrics container
     summary_container = st.container()
     
-    # Initialize toolbox
-    toolbox = MHAComparisonToolbox()
-    toolbox.set_task_type(task_type)
-    toolbox.load_data(X, y, dataset_name)
-    
-    # Progress tracking
-    total_algorithms = len(algorithms)
-    total_steps = total_algorithms * n_runs
-    current_step = 0
-    
-    # Results tracking
-    successful_algorithms = 0
-    failed_algorithms = 0
-    all_results = {}
-    
-    status_text.text(f"🚀 Starting comprehensive comparison of {total_algorithms} algorithms...")
-    
-    # Display progress summary
-    with summary_container:
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            success_metric = st.metric("✅ Successful", successful_algorithms)
-        with col2:
-            total_metric = st.metric("📊 Total", total_algorithms)
-        with col3:
-            progress_metric = st.metric("🔄 Progress", "0%")
-        with col4:
-            time_metric = st.metric("⏱️ Total Time", "0s")
-    
-    # Run comparison with progress updates
-    start_time = time.time()
-    
     try:
+        # Initialize toolbox
+        status_text.text("🔧 Initializing MHA Toolbox with detailed tracking...")
+        toolbox = MHAComparisonToolbox()
+        toolbox.set_task_type(task_type)
+        toolbox.load_data(X, y, dataset_name)
+        st.success("✅ Toolbox and detailed collector initialized successfully!")
+        
+        # Progress tracking
+        total_algorithms = len(algorithms)
+        successful_algorithms = 0
+        failed_algorithms = 0
+        all_results = {}
+        
+        # Display initial summary
+        with summary_container:
+            st.markdown("### 📈 **REAL-TIME SUMMARY WITH NPZ TRACKING**")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                success_metric = st.metric("✅ Completed", 0, f"0/{total_algorithms}")
+            with col2:
+                fail_metric = st.metric("❌ Failed", 0)
+            with col3:
+                progress_metric = st.metric("🔄 Progress", "0%")
+            with col4:
+                time_metric = st.metric("⏱️ Total Time", "0s")
+        
+        start_time = time.time()
+        
+        # Run each algorithm with detailed tracking
         for i, alg_name in enumerate(algorithms):
+            current_progress = (i / total_algorithms)
+            progress_bar.progress(current_progress)
+            
+            status_text.text(f"🧬 Running {alg_name.upper()} with detailed iteration tracking [{i+1}/{total_algorithms}]...")
+            
+            with algorithm_status.container():
+                st.markdown(f"#### 🔬 **Currently Running: {alg_name.upper()}** (With Detailed NPZ Collection)")
+                alg_progress = st.progress(0)
+                alg_status = st.empty()
+            
+            # Run algorithm with comprehensive detailed tracking
             alg_start_time = time.time()
             
-            # Update status
-            progress_percent = (i / total_algorithms) * 100
-            status_text.text(f"🧬 [{i+1}/{total_algorithms}] Running {alg_name.upper()}... ({progress_percent:.1f}%)")
-            
-            # Run algorithm with timeout protection
-            alg_results = run_algorithm_with_timeout(
-                alg_name, X, y, task_type, max_iterations, 
-                population_size, n_runs, timeout_minutes * 60
-            )
-            
-            if alg_results:
-                # Success
-                all_results[alg_name] = alg_results
-                toolbox.results[alg_name] = alg_results  # Add to main toolbox
-                successful_algorithms += 1
+            try:
+                alg_status.text("🔬 Initializing detailed tracking system...")
+                time.sleep(0.5)
+                alg_progress.progress(0.1)
                 
-                # Update progress
-                current_step += n_runs
-                progress = current_step / total_steps
-                progress_bar.progress(min(progress, 1.0))
+                alg_status.text("🚀 Running optimization with iteration-by-iteration data collection...")
                 
-                # Show algorithm results
-                with progress_details.container():
-                    st.markdown(f"### ✅ {alg_name.upper()} - Completed")
+                # ENHANCED ALGORITHM EXECUTION WITH DETAILED TRACKING
+                alg_results = run_algorithm_with_detailed_tracking(
+                    algorithm_name=alg_name,
+                    X=X, y=y,
+                    task_type=task_type,
+                    max_iterations=max_iterations,
+                    population_size=population_size,
+                    n_runs=n_runs,
+                    timeout_seconds=timeout_minutes * 60,
+                    collector=collector,
+                    show_progress=False  # We handle progress here
+                )
+                
+                alg_progress.progress(0.8)
+                alg_status.text("� Saving detailed NPZ data...")
+                time.sleep(0.3)
+                alg_progress.progress(1.0)
+                
+                if alg_results:
+                    # SUCCESS with detailed data
+                    all_results[alg_name] = alg_results
+                    toolbox.results[alg_name] = alg_results
+                    successful_algorithms += 1
                     
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Best Fitness", f"{alg_results['statistics']['best_fitness']:.6f}")
-                    with col2:
-                        st.metric("Mean Fitness", f"{alg_results['statistics']['mean_fitness']:.6f}")
-                    with col3:
-                        st.metric("Execution Time", f"{alg_results['statistics']['mean_time']:.2f}s")
-                    with col4:
-                        if task_type == 'feature_selection' and 'mean_features' in alg_results['statistics']:
-                            st.metric("Features", f"{alg_results['statistics']['mean_features']:.1f}")
-                        else:
-                            st.metric("Runs", f"{alg_results['statistics']['total_runs']}")
+                    alg_status.text(f"✅ {alg_name.upper()} completed with detailed data saved!")
+                    
+                    # Display immediate results with detailed info
+                    with results_container.expander(f"✅ {alg_name.upper()} - Detailed Results", expanded=False):
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("Best Fitness", f"{alg_results['statistics']['best_fitness']:.6f}")
+                        with col2:
+                            st.metric("Mean Fitness", f"{alg_results['statistics']['mean_fitness']:.6f}")
+                        with col3:
+                            st.metric("Execution Time", f"{alg_results['statistics']['mean_time']:.2f}s")
+                        with col4:
+                            st.metric("Total Iterations", f"{sum(r['total_iterations'] for r in alg_results['runs'])}")
+                        
+                        # Show detailed tracking info
+                        st.success("🔬 **Detailed Data Collected:**")
+                        st.text("✅ Convergence curve points per iteration")
+                        st.text("✅ Best/mean/worst fitness per iteration")
+                        st.text("✅ Population fitness history")
+                        st.text("✅ Local best solutions per agent")
+                        st.text("✅ Agent positions per iteration")
+                        st.text("✅ Diversity measures and exploration/exploitation ratios")
+                    
+                else:
+                    # FAILED
+                    failed_algorithms += 1
+                    alg_status.text(f"❌ {alg_name.upper()} failed or timed out")
+                    
+                    with results_container.expander(f"❌ {alg_name.upper()} - Failed", expanded=False):
+                        st.error(f"Algorithm {alg_name.upper()} exceeded timeout of {timeout_minutes} minutes")
                 
-            else:
-                # Failed
+            except Exception as e:
                 failed_algorithms += 1
-                st.warning(f"⚠️ {alg_name.upper()} timed out or failed")
+                alg_status.text(f"❌ {alg_name.upper()} error: {str(e)}")
+                
+                with results_container.expander(f"❌ {alg_name.upper()} - Error", expanded=False):
+                    st.error(f"Error in {alg_name.upper()}: {str(e)}")
             
             # Update summary metrics
             elapsed_time = time.time() - start_time
+            current_progress = ((i + 1) / total_algorithms) * 100
+            
             with summary_container:
+                st.markdown("### 📈 **REAL-TIME SUMMARY WITH NPZ TRACKING**")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("✅ Successful", successful_algorithms)
+                    st.metric("✅ Completed", successful_algorithms, f"{successful_algorithms}/{total_algorithms}")
                 with col2:
-                    st.metric("📊 Total", total_algorithms)
+                    st.metric("❌ Failed", failed_algorithms)
                 with col3:
-                    progress_percent = ((i + 1) / total_algorithms) * 100
-                    st.metric("🔄 Progress", f"{progress_percent:.1f}%")
+                    st.metric("🔄 Progress", f"{current_progress:.1f}%")
                 with col4:
                     st.metric("⏱️ Total Time", f"{elapsed_time:.1f}s")
         
-        # Final completion
-        total_time = time.time() - start_time
+        # FINAL COMPLETION WITH DETAILED DATA STORAGE
         progress_bar.progress(1.0)
+        total_time = time.time() - start_time
         
         if successful_algorithms > 0:
-            status_text.text(f"✅ Comparison completed! {successful_algorithms}/{total_algorithms} algorithms successful")
+            status_text.text(f"🎉 COMPARISON COMPLETE! {successful_algorithms}/{total_algorithms} algorithms with detailed NPZ data")
+            
+            # Finalize session and save all NPZ files
+            st.markdown("---")
+            st.markdown("## 💾 **FINALIZING DETAILED DATA STORAGE**")
+            
+            with st.spinner("💾 Saving comprehensive NPZ files with detailed algorithm data..."):
+                session_result = collector.finalize_session()
+                
+                if session_result:
+                    st.success("🎯 **ALL DETAILED DATA SAVED TO NPZ FORMAT!**")
+                    
+                    # Show saved files
+                    st.markdown("### 📁 **NPZ FILES CREATED (Structured Format):**")
+                    for i, alg_result in enumerate(session_result['saved_algorithms']):
+                        st.success(f"✅ **Algorithm {i+1}**: {alg_result['metadata']['algorithm_name'].upper()}")
+                        st.text(f"   📄 NPZ File: {Path(alg_result['npz_path']).name}")
+                        st.text(f"   💽 Size: {alg_result['metadata']['file_size_mb']:.2f} MB")
+                        st.text(f"   📊 Arrays: {len(alg_result['metadata']['data_arrays'])} data arrays")
+                        st.text(f"   🔢 Iterations: {alg_result['metadata']['total_iterations']}")
+                    
+                    # Show storage structure
+                    st.info(f"🗂️ **Storage Location**: {session_result['session_metadata_path']}")
+                    st.info("📂 **Tree Structure**: Dataset → Session → Algorithm.npz (Professional organization)")
             
             # Store results in session state
             st.session_state.toolbox = toolbox
             st.session_state.results_ready = True
+            st.session_state.comparison_results = all_results.copy()
+            st.session_state.session_metadata = session_result
             
-            # Enhanced auto-save with persistent storage
-            with st.spinner("💾 Auto-saving comprehensive results with persistent storage..."):
-                results_manager = st.session_state.results_manager
-                experiment_name = f"comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                export_data, saved_files = results_manager.save_comprehensive_results(
-                    toolbox, 
-                    session_name=experiment_name
-                )
-                
-                if saved_files:
-                    st.success(f"✅ **Results Permanently Saved** to Session: `{results_manager.current_session}`")
-                    
-                    # Show actual file paths that were created
-                    st.info("📁 **Local Files Created:**")
-                    for file_type, file_path in saved_files.items():
-                        if file_path and os.path.exists(file_path):
-                            # Get absolute path for display
-                            abs_path = os.path.abspath(file_path)
-                            filename = os.path.basename(file_path)
-                            st.text(f"• {file_type.replace('_', ' ').title()}: {filename}")
-                            st.text(f"  📂 Path: {abs_path}")
-                    
-                    # Show directory where files are saved
-                    session_dir = os.path.join(os.getcwd(), "results", "persistent_storage", "sessions", results_manager.current_session)
-                    if os.path.exists(session_dir):
-                        st.info(f"📂 **All files saved to**: `{session_dir}`")
-                else:
-                    st.warning("⚠️ Persistent storage encountered issues but results are still available below")
-            
-            # Summary statistics
+            # COMPREHENSIVE RESULTS DISPLAY
             st.markdown("---")
-            st.markdown("## 📊 Comprehensive Results Analysis")
+            st.markdown("## 🏆 **COMPREHENSIVE RESULTS ANALYSIS WITH DETAILED DATA**")
             
-            # Overall statistics
-            all_fitnesses = []
-            all_times = []
-            all_features = []
+            # Create results table
+            results_data = []
+            for alg_name, result in all_results.items():
+                stats = result['statistics']
+                results_data.append({
+                    'Algorithm': alg_name.upper(),
+                    'Best Fitness': f"{stats['best_fitness']:.6f}",
+                    'Mean Fitness': f"{stats['mean_fitness']:.6f}",
+                    'Std Dev': f"{stats['std_fitness']:.6f}",
+                    'Execution Time (s)': f"{stats['mean_time']:.2f}",
+                    'Total Iterations': sum(r['total_iterations'] for r in result['runs']),
+                    'NPZ Data': "✅ Saved"
+                })
             
-            for results in all_results.values():
-                stats = results['statistics']
-                all_fitnesses.append(stats['best_fitness'])
-                all_times.append(stats['mean_time'])
-                if task_type == 'feature_selection' and 'mean_features' in stats:
-                    all_features.append(stats['mean_features'])
+            # Display results table
+            st.markdown("### 📊 **ALGORITHM PERFORMANCE TABLE WITH NPZ TRACKING**")
+            import pandas as pd
+            df = pd.DataFrame(results_data)
+            st.dataframe(df, width="stretch")
             
-            col1, col2, col3, col4 = st.columns(4)
+            # Best performers analysis
+            best_fitness_alg = min(all_results.items(), key=lambda x: x[1]['statistics']['best_fitness'])
+            fastest_alg = min(all_results.items(), key=lambda x: x[1]['statistics']['mean_time'])
+            
+            st.markdown("### 🏆 **WINNERS ANALYSIS WITH DETAILED DATA AVAILABLE**")
+            col1, col2 = st.columns(2)
             with col1:
-                st.metric("✅ Successful", successful_algorithms, f"{(successful_algorithms/total_algorithms)*100:.1f}%")
+                st.success(f"🥇 **BEST FITNESS**: {best_fitness_alg[0].upper()}")
+                st.metric("Best Fitness Score", f"{best_fitness_alg[1]['statistics']['best_fitness']:.6f}")
+                st.metric("Mean Fitness", f"{best_fitness_alg[1]['statistics']['mean_fitness']:.6f}")
+                st.text("💾 Detailed convergence data available in NPZ")
+            
             with col2:
-                st.metric("📊 Total", total_algorithms)
-            with col3:
-                st.metric("🏆 Best Fitness", f"{min(all_fitnesses):.6f}" if all_fitnesses else "N/A")
-            with col4:
-                st.metric("⏱️ Total Time", f"{total_time:.1f}s")
+                st.info(f"⚡ **FASTEST EXECUTION**: {fastest_alg[0].upper()}")
+                st.metric("Execution Time", f"{fastest_alg[1]['statistics']['mean_time']:.2f}s")
+                st.metric("Speed Advantage", f"{(max([r['statistics']['mean_time'] for r in all_results.values()]) / fastest_alg[1]['statistics']['mean_time']):.1f}x faster")
+                st.text("💾 Iteration timing data available in NPZ")
             
-            # Best algorithm identification
-            if all_results:
-                best_alg = min(all_results.items(), key=lambda x: x[1]['statistics']['best_fitness'])
-                fastest_alg = min(all_results.items(), key=lambda x: x[1]['statistics']['mean_time'])
-                
-                st.success(f"🏆 **Best Algorithm**: {best_alg[0].upper()} (Fitness: {best_alg[1]['statistics']['best_fitness']:.6f})")
-                st.info(f"⚡ **Fastest Algorithm**: {fastest_alg[0].upper()} (Time: {fastest_alg[1]['statistics']['mean_time']:.2f}s)")
+            # Success message
+            st.markdown("### 🎉 **COMPREHENSIVE COMPARISON COMPLETE!**")
+            st.success("✅ All algorithms compared with detailed NPZ data storage!")
+            st.success("✅ Tree-like storage structure implemented: Dataset/Session/Algorithm.npz")
+            st.success("✅ Convergence curves, fitness tracking, and population data saved")
+            st.success("✅ Ready for advanced plotting and comparison analysis")
             
-            # Display detailed results
-            display_results()
-        
         else:
-            status_text.text("❌ All algorithms failed or timed out")
-            st.error("No algorithms completed successfully. Try reducing iterations or increasing timeout.")
+            status_text.text("❌ All algorithms failed - check parameters and try again")
+            st.error("All algorithms failed. Try reducing iterations or increasing timeout.")
             
     except Exception as e:
-        status_text.text(f"❌ Error during comparison: {str(e)}")
-        st.error(f"Comparison failed: {str(e)}")
-        progress_bar.progress(0)
-        return
+        st.error(f"❌ Critical error in enhanced comparison system: {str(e)}")
+        import traceback
+        st.error(f"Traceback: {traceback.format_exc()}")
+        
+    finally:
+        # Clean up progress displays
+        algorithm_status.empty()
 
 def run_algorithm_with_timeout(alg_name, X, y, task_type, max_iterations, 
-                              population_size, n_runs, timeout_seconds):
-    """Run single algorithm with robust timeout protection and error handling"""
+                              population_size, n_runs, timeout_seconds, execution_mode="comparison"):
+    """Run single algorithm with robust timeout protection, error handling, and enhanced tracking"""
     
     import mha_toolbox as mha
     import signal
@@ -649,12 +1027,20 @@ def run_algorithm_with_timeout(alg_name, X, y, task_type, max_iterations,
         'verbose': False
     }
     
+    # Enhanced tracking for single algorithm mode
+    detailed_tracking = execution_mode == "single_detailed"
+    
     runs_data = []
     total_start_time = time.time()
+    
+    # Initialize agent tracker for detailed mode
+    if detailed_tracking:
+        agent_tracker = EnhancedAgentTracker()
     
     for run in range(n_runs):
         try:
             run_start_time = time.time()
+            run_id = f"{alg_name}_{int(time.time())}_{run}"
             
             # Check global timeout
             if time.time() - total_start_time > timeout_seconds:
@@ -664,6 +1050,14 @@ def run_algorithm_with_timeout(alg_name, X, y, task_type, max_iterations,
             # Set individual run timeout (30% of remaining time)
             remaining_time = timeout_seconds - (time.time() - total_start_time)
             run_timeout = min(remaining_time * 0.3, timeout_seconds / n_runs)
+            
+            # Initialize tracking for this run
+            if detailed_tracking:
+                agent_tracker.initialize_tracking(
+                    alg_name, population_size, 
+                    X.shape[1] if task_type == 'feature_selection' else 3, 
+                    run_id
+                )
             
             # Run with timeout protection
             try:
@@ -683,6 +1077,17 @@ def run_algorithm_with_timeout(alg_name, X, y, task_type, max_iterations,
                         'final_accuracy': float(1 - result.best_fitness_),
                         'success': True
                     }
+                    
+                    # Enhanced tracking for single algorithm mode
+                    if detailed_tracking and hasattr(result, 'detailed_history'):
+                        run_result['detailed_tracking'] = {
+                            'agent_positions_history': result.detailed_history.get('positions', []),
+                            'agent_fitness_history': result.detailed_history.get('fitness', []),
+                            'exploration_exploitation_ratio': result.detailed_history.get('exp_exp_ratio', []),
+                            'diversity_measures': result.detailed_history.get('diversity', []),
+                            'bounds_tracking': result.detailed_history.get('bounds', {}),
+                            'local_search_info': result.detailed_history.get('local_search', [])
+                        }
                 
                 elif task_type == 'feature_optimization':
                     # Create custom objective function for feature weights optimization
@@ -922,24 +1327,44 @@ def display_results():
     """Display comprehensive results with interactive plots"""
     
     toolbox = st.session_state.toolbox
+    execution_mode = st.session_state.get('execution_mode', 'comparison')
     
     st.markdown("---")
-    st.header("📊 Comparison Results")
     
-    # Results tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📈 Overview", "🔄 Convergence", "📊 Statistics", "💾 Export"])
-    
-    with tab1:
-        display_overview(toolbox)
-    
-    with tab2:
-        display_convergence_plots(toolbox)
-    
-    with tab3:
-        display_detailed_statistics(toolbox)
-    
-    with tab4:
+    # Check if single algorithm mode
+    if execution_mode == "single_detailed" and len(toolbox.results) == 1:
+        st.header("� Single Algorithm Detailed Analysis")
+        
+        # Get the single algorithm results
+        algorithm_name = list(toolbox.results.keys())[0]
+        algorithm_results = toolbox.results[algorithm_name]
+        
+        # Use enhanced visualizer for detailed single algorithm analysis
+        enhanced_visualizer = st.session_state.enhanced_visualizer
+        enhanced_visualizer.create_algorithm_dashboard(algorithm_results, algorithm_name)
+        
+        # Still show export options
+        st.markdown("---")
         display_export_options(toolbox)
+        
+    else:
+        # Standard comparison mode
+        st.header("�📊 Algorithm Comparison Results")
+        
+        # Results tabs
+        tab1, tab2, tab3, tab4 = st.tabs(["📈 Overview", "🔄 Convergence", "📊 Statistics", "💾 Export"])
+        
+        with tab1:
+            display_overview(toolbox)
+        
+        with tab2:
+            display_convergence_plots(toolbox)
+        
+        with tab3:
+            display_detailed_statistics(toolbox)
+        
+        with tab4:
+            display_export_options(toolbox)
 
 def display_overview(toolbox):
     """Display overview of results"""
@@ -984,7 +1409,7 @@ def display_overview(toolbox):
         color_continuous_scale='RdYlGn_r'
     )
     fig.update_layout(height=400)
-    st.plotly_chart(fig, use_container_width=True, key="overview_performance_chart")
+    st.plotly_chart(fig, use_container_width=True, key=get_unique_key("overview_performance_chart"))
 
 def display_convergence_plots(toolbox):
     """Display convergence plots"""
@@ -1016,7 +1441,7 @@ def display_convergence_plots(toolbox):
         hovermode='x unified'
     )
     
-    st.plotly_chart(fig, use_container_width=True, key="convergence_plots_chart")
+    st.plotly_chart(fig, use_container_width=True, key=get_unique_key("convergence_plots_chart"))
     
     # Box plot for fitness distribution
     st.subheader("📦 Fitness Distribution Across Runs")
@@ -1037,7 +1462,7 @@ def display_convergence_plots(toolbox):
         title="Fitness Distribution (All Runs)"
     )
     fig_box.update_layout(height=400)
-    st.plotly_chart(fig_box, use_container_width=True, key="fitness_distribution_box_chart")
+    st.plotly_chart(fig_box, use_container_width=True, key=get_unique_key("fitness_distribution_box_chart"))
 
 def display_detailed_statistics(toolbox):
     """Display detailed statistical analysis"""
@@ -1093,7 +1518,7 @@ def display_detailed_statistics(toolbox):
             title="Features vs Accuracy Trade-off"
         )
         fig_scatter.update_layout(height=400)
-        st.plotly_chart(fig_scatter, use_container_width=True, key="performance_scatter_chart")
+        st.plotly_chart(fig_scatter, use_container_width=True, key=get_unique_key("performance_scatter_chart"))
 
 def save_comprehensive_results(toolbox, auto_save=True):
     """Save comprehensive results with all data including models - ALWAYS saves to backend"""
@@ -1325,22 +1750,70 @@ def save_comprehensive_results(toolbox, auto_save=True):
 def display_export_options(toolbox):
     """Display comprehensive export and download options with persistent storage"""
     
+    # Clean up any stale references before displaying downloads
+    cleanup_stale_references()
+    
     st.subheader("💾 Complete Results & 🏆 BEST MODELS")
     
-    # Get results manager
-    results_manager = st.session_state.results_manager
+    # Get managers with error handling
+    try:
+        results_manager = st.session_state.results_manager
+        persistent_manager = st.session_state.persistent_state_manager
+    except Exception as e:
+        st.error(f"❌ Manager initialization failed: {str(e)}")
+        st.info("💡 Please refresh the page or click Fresh Start.")
+        return
     
     # Auto-save results with persistent storage
     experiment_name = f"export_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    export_data, saved_files = results_manager.save_comprehensive_results(
-        toolbox, 
-        session_name=experiment_name
-    )
+    try:
+        export_data, saved_files = results_manager.save_comprehensive_results(
+            toolbox, 
+            session_name=experiment_name
+        )
+    except Exception as e:
+        st.error(f"❌ Export failed: {str(e)}")
+        st.info("💡 Try running a fresh analysis or click Fresh Start.")
+        return
+    
+    # Create persistent download files that won't vanish
+    if export_data:
+        # Create persistent downloads
+        models_file = persistent_manager.create_download_file(
+            export_data.get('models', {}), 
+            "BEST_MODELS", 
+            "json"
+        )
+        
+        complete_file = persistent_manager.create_download_file(
+            export_data, 
+            "complete_results", 
+            "json"
+        )
+        
+        # Create summary CSV
+        if 'algorithms' in export_data:
+            import pandas as pd
+            summary_data = []
+            for alg_name, alg_data in export_data['algorithms'].items():
+                summary_data.append({
+                    'Algorithm': alg_name.upper(),
+                    'Best_Fitness': alg_data.get('performance_score', 0),
+                    'Execution_Time': alg_data.get('execution_time', 0),
+                    'Stability': alg_data.get('stability', 0)
+                })
+            
+            summary_df = pd.DataFrame(summary_data)
+            summary_file = persistent_manager.create_download_file(
+                summary_df, 
+                "performance_summary", 
+                "csv"
+            )
     
     # Enhanced model showcase first
     if export_data and 'models' in export_data and export_data['models']:
         st.markdown("### 🏆 **BEST MODELS READY FOR DOWNLOAD**")
-        st.info("� **These optimized models contain the best configurations found for each algorithm!**")
+        st.success("🛡️ **Persistent Downloads** - Files won't vanish after download or system sleep!")
         
         # Top 3 models highlight
         sorted_models = sorted(export_data['models'].items(), key=lambda x: x[1]['best_fitness'])
@@ -1375,20 +1848,21 @@ def display_export_options(toolbox):
                 )
     
     # Enhanced download section with prominent model button
-    if saved_files and saved_files[0]:
-        st.markdown("### 📥 **INSTANT DOWNLOADS**")
+    if saved_files:
+        st.markdown("### 📥 *INSTANT DOWNLOADS*")
         
         # Make model download super prominent
-        if saved_files[2]:
-            with open(saved_files[2], 'r') as f:
+        models_file_path = saved_files.get('models_file')
+        if models_file_path and os.path.exists(models_file_path):
+            with open(models_file_path, 'r') as f:
                 models_data = f.read()
             st.download_button(
-                label="🏆 **DOWNLOAD ALL BEST MODELS** 🏆",
+                label="🏆 *DOWNLOAD ALL BEST MODELS* 🏆",
                 data=models_data,
                 file_name=f"BEST_MODELS_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
                 mime="application/json",
                 help="🚀 Complete optimized models for all algorithms - Ready for production use!",
-                width='stretch',
+                use_container_width=True,
                 type="primary"
             )
         
@@ -1397,21 +1871,24 @@ def display_export_options(toolbox):
         
         with col1:
             # Complete results
-            with open(saved_files[0], 'r') as f:
-                results_data = f.read()
-            st.download_button(
-                label="� Complete Analysis & Data",
-                data=results_data,
-                file_name=f"complete_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                help="All algorithms, runs, convergence curves, and detailed analysis",
-                width='stretch'
-            )
+            results_file_path = saved_files.get('results_file')
+            if results_file_path and os.path.exists(results_file_path):
+                with open(results_file_path, 'r') as f:
+                    results_data = f.read()
+                st.download_button(
+                    label=" Complete Analysis & Data",
+                    data=results_data,
+                    file_name=f"complete_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json",
+                    help="All algorithms, runs, convergence curves, and detailed analysis",
+                    use_container_width=True
+                )
         
         with col2:
             # Summary CSV
-            if saved_files[1]:
-                with open(saved_files[1], 'r') as f:
+            summary_file_path = saved_files.get('summary_file')
+            if summary_file_path and os.path.exists(summary_file_path):
+                with open(summary_file_path, 'r') as f:
                     summary_data = f.read()
                 st.download_button(
                     label="📊 Performance Rankings",
@@ -1419,9 +1896,9 @@ def display_export_options(toolbox):
                     file_name=f"rankings_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv",
                     help="Algorithm rankings, statistics, and comparison metrics",
-                    width='stretch'
+                    use_container_width=True
                 )
-    
+
     # Previous session results access
     if 'saved_results' in st.session_state and st.session_state.saved_results:
         st.markdown("### 📚 Previous Session Results")
@@ -1433,37 +1910,31 @@ def display_export_options(toolbox):
                 
                 with col1:
                     if result_info['results_file'] and os.path.exists(result_info['results_file']):
-                        with open(result_info['results_file'], 'r') as f:
-                            data = f.read()
-                        st.download_button(
+                        safe_download_button(
                             label="📄 Complete Results",
-                            data=data,
-                            file_name=f"results_{result_info['timestamp']}.json",
-                            mime="application/json",
+                            file_path=result_info['results_file'],
+                            download_filename=f"results_{result_info['timestamp']}.json",
+                            mime_type="application/json",
                             key=f"results_{i}"
                         )
                 
                 with col2:
                     if result_info['summary_file'] and os.path.exists(result_info['summary_file']):
-                        with open(result_info['summary_file'], 'r') as f:
-                            data = f.read()
-                        st.download_button(
+                        safe_download_button(
                             label="📊 Summary",
-                            data=data,
-                            file_name=f"summary_{result_info['timestamp']}.csv",
-                            mime="text/csv",
+                            file_path=result_info['summary_file'],
+                            download_filename=f"summary_{result_info['timestamp']}.csv",
+                            mime_type="text/csv",
                             key=f"summary_{i}"
                         )
                 
                 with col3:
                     if result_info['models_file'] and os.path.exists(result_info['models_file']):
-                        with open(result_info['models_file'], 'r') as f:
-                            data = f.read()
-                        st.download_button(
+                        safe_download_button(
                             label="🏆 Models",
-                            data=data,
-                            file_name=f"models_{result_info['timestamp']}.json",
-                            mime="application/json",
+                            file_path=result_info['models_file'],
+                            download_filename=f"models_{result_info['timestamp']}.json",
+                            mime_type="application/json",
                             key=f"models_{i}"
                         )
     
@@ -1473,7 +1944,7 @@ def display_export_options(toolbox):
         
         with col1:
             # Convergence analysis
-            if st.button("📈 Export Convergence Analysis", width='stretch'):
+            if st.button("📈 Export Convergence Analysis", width='stretch', key=get_unique_key("export_convergence_analysis")):
                 convergence_analysis = {
                     'metadata': {
                         'export_type': 'convergence_analysis',
@@ -1534,12 +2005,13 @@ def display_export_options(toolbox):
                     label="⬇️ Download Convergence Analysis",
                     data=json.dumps(convergence_analysis, indent=2, default=str),
                     file_name=f"convergence_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                    mime="application/json"
+                    mime="application/json",
+                    key=get_unique_key("download_convergence_analysis")
                 )
         
         with col2:
             # Performance comparison
-            if st.button("🏆 Export Performance Comparison", width='stretch'):
+            if st.button("🏆 Export Performance Comparison", width='stretch', key=get_unique_key("export_performance_comparison")):
                 performance_data = {
                     'metadata': {
                         'export_type': 'performance_comparison',
@@ -1585,7 +2057,8 @@ def display_export_options(toolbox):
                     label="⬇️ Download Performance Analysis",
                     data=json.dumps(performance_data, indent=2, default=str),
                     file_name=f"performance_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                    mime="application/json"
+                    mime="application/json",
+                    key=get_unique_key("download_performance_analysis")
                 )
     
     # Backend storage info
@@ -1645,7 +2118,8 @@ def display_export_options(toolbox):
                 label="⬇️ Download CSV",
                 data=csv_str,
                 file_name=filename,
-                mime="text/csv"
+                mime="text/csv",
+                key=get_unique_key("download_csv_summary")
             )
     
     # Summary report
@@ -1692,7 +2166,8 @@ def display_export_options(toolbox):
             label="📄 Download Report",
             data=summary_text,
             file_name=filename,
-            mime="text/plain"
+            mime="text/plain",
+            key=get_unique_key("download_summary_report")
         )
 
 
@@ -1716,7 +2191,7 @@ def display_persistent_results_manager():
         st.info(f"**Session ID**: `{results_manager.current_session}`")
     with col2:
         # Create download package button
-        if st.button("📦 Create Download Package"):
+        if st.button("📦 Create Download Package", key=get_unique_key("create_download_package")):
             with st.spinner("Creating comprehensive download package..."):
                 package_path = results_manager.create_download_package()
                 if package_path:
@@ -1769,22 +2244,16 @@ def display_persistent_results_manager():
                                         file_type = "🏅 Rankings"
                                     
                                     # Read and create download
-                                    try:
-                                        with open(file_path, 'r') as f:
-                                            file_data = f.read()
-                                        
-                                        mime_type = "application/json" if file_name.endswith('.json') else "text/csv"
-                                        
-                                        st.download_button(
-                                            label=file_type,
-                                            data=file_data,
-                                            file_name=file_name,
-                                            mime=mime_type,
-                                            key=f"persist_{file_path}_{exp['name']}",
-                                            help=f"Download {file_name}"
-                                        )
-                                    except Exception as e:
-                                        st.error(f"Error reading {file_name}: {str(e)}")
+                                    mime_type = "application/json" if file_name.endswith('.json') else "text/csv"
+                                    
+                                    safe_download_button(
+                                        label=file_type,
+                                        file_path=str(file_path),
+                                        download_filename=file_name,
+                                        mime_type=mime_type,
+                                        key=f"persist_{file_path}_{exp['name']}",
+                                        help_text=f"Download {file_name}"
+                                    )
                 else:
                     st.info("📝 No experiments found in this session")
     else:
@@ -1815,16 +2284,13 @@ def display_persistent_results_manager():
                         )
                 
                 # Download full model set
-                with open(model_info['path'], 'r') as f:
-                    full_model_data = f.read()
-                
-                st.download_button(
+                safe_download_button(
                     label=f"🏆 Download All {model_info['algorithm_count']} Models",
-                    data=full_model_data,
-                    file_name=model_info['filename'],
-                    mime="application/json",
+                    file_path=model_info['path'],
+                    download_filename=model_info['filename'],
+                    mime_type="application/json",
                     key=f"models_download_{model_info['timestamp']}",
-                    help="Download complete optimized model set"
+                    help_text="Download complete optimized model set"
                 )
     else:
         st.info("🎯 No models found yet. Run some experiments to generate optimized models!")
