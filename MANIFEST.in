@@ -1,0 +1,33 @@
+# Manifest file for MHA Toolbox package distribution
+include README.md
+include LICENSE
+include requirements.txt
+include setup.py
+include *.md
+include *.txt
+
+# Documentation
+recursive-include docs *
+recursive-include examples *
+
+# Package data
+recursive-include mha_toolbox *.py
+recursive-include mha_toolbox/data *.csv *.json
+recursive-include mha_toolbox/templates *.html
+recursive-include mha_toolbox/static *.css *.js *.png *.jpg
+
+# Test files
+recursive-include tests *.py
+
+# Configuration files
+include pyproject.toml
+include tox.ini
+include .gitignore
+
+# Exclude compiled Python files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude *.so
+global-exclude .DS_Store

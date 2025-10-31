@@ -82,7 +82,7 @@ setup(
     version=get_version(),
     author="MHA Development Team",
     author_email="mha.toolbox@gmail.com",
-    description="Professional Metaheuristic Algorithm Library with 36+ algorithms, hybrid combinations, and comprehensive analysis tools",
+    description="Professional Metaheuristic Algorithm Library with 95+ algorithms including swarm, evolutionary, bio-inspired, physics-based, and 9 hybrid combinations",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/Achyut103040/MHA-Algorithm",

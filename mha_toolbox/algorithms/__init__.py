@@ -41,6 +41,47 @@ from .gbo import GradientBasedOptimizer
 from .innov import WeightedMeanOfVectors
 from .wca import WaterCycleAlgorithm
 from .vns import VariableNeighborhoodSearch
+# New algorithms batch 3 - Bio-inspired
+from .dmoa import DwarfMongooseOptimization
+from .fpa import FlowerPollinationAlgorithm
+from .foa import FruitFlyOptimization
+from .gao import GiantArmadilloOptimization
+from .hba import HoneyBadgerAlgorithm
+from .hgs import HungerGamesSearch
+from .koa import KookaburraOptimization
+from .kh import KrillHerdAlgorithm
+from .mpa import MarinePredatorsAlgorithm
+from .nmr import NakedMoleRatAlgorithm
+from .sfo import SailfishOptimizer
+from .scso import SandCatSwarmOptimization
+from .as_ant import AntSystem
+from .bbo import BiogeographyBasedOptimization
+from .sos import SymbioticOrganismsSearch
+from .who import WildebeestHerdOptimization as WHO
+from .ca import CultureAlgorithm as CA
+# New algorithms batch 4 - Additional metaheuristics
+from .gsk import GainingSharingKnowledgeAlgorithm as GSK
+from .lca import LeagueChampionshipAlgorithm as LCA
+from .sar import SearchAndRescueOptimization as SAR
+from .lcbo import LifeChoiceBasedOptimization as LCBO
+from .ssd import SocialSkiDriverOptimization as SSD
+from .thro import TianjiHorseRacingOptimization as THRO
+from .aso import AtomSearchOptimization as ASO
+from .gbmo import GasesBrownianMotionOptimization as GBMO
+from .mvo import MultiVerseOptimizer as MVO
+from .two import TugOfWarOptimization as TWO
+from .cro import ChemicalReactionOptimization as CRO
+from .nro import NuclearReactionOptimization as NRO
+from .wwo import WaterWavesOptimization as WWO
+from .hc import HillClimbing as HC
+from .aeo import ArtificialEcosystemOptimization as AEO
+from .pm import POPMUSIC as PM
+from .hs import HarmonySearch as HS
+from .boa import BaseOptimizationAlgorithm as BOA
+from .cem import CrossEntropyMethod
+from .run import RungeKuttaOptimizer as RUNAlgorithm
+from .gco import GerminalCenterOptimization
+from .ts import TabuSearch
 
 __all__ = [
     'SineCosinAlgorithm',
@@ -81,5 +122,62 @@ __all__ = [
     'GradientBasedOptimizer',
     'WeightedMeanOfVectors',
     'WaterCycleAlgorithm',
-    'VariableNeighborhoodSearch'
+    'VariableNeighborhoodSearch',
+    # New algorithms batch 3 - Bio-inspired
+    'DwarfMongooseOptimization',
+    'FlowerPollinationAlgorithm',
+    'FruitFlyOptimization',
+    'GiantArmadilloOptimization',
+    'HoneyBadgerAlgorithm',
+    'HungerGamesSearch',
+    'KookaburraOptimization',
+    'KrillHerdAlgorithm',
+    'MarinePredatorsAlgorithm',
+    'NakedMoleRatAlgorithm',
+    'SailfishOptimizer',
+    'SandCatSwarmOptimization',
+    'AntSystem',
+    'BiogeographyBasedOptimization',
+    'SymbioticOrganismsSearch',
+    'WHO',
+    'CA',
+    # New algorithms batch 4 - Additional metaheuristics
+    'GSK',
+    'LCA',
+    'SAR',
+    'LCBO',
+    'SSD',
+    'THRO',
+    'ASO',
+    'GBMO',
+    'MVO',
+    'TWO',
+    'CRO',
+    'NRO',
+    'WWO',
+    'HC',
+    'AEO',
+    'PM',
+    'HS',
+    'BOA',
+    'CrossEntropyMethod',
+    'RUNAlgorithm',
+    'GerminalCenterOptimization',
+    'TabuSearch'
 ]
+
+# Common aliases for convenience
+PSO = ParticleSwarmOptimization
+GA = GeneticAlgorithm
+GWO = GreyWolfOptimizer
+WOA = WhaleOptimizationAlgorithm
+FA = FireflyAlgorithm
+BA = BatAlgorithm
+ACO = AntColonyOptimization
+DE = DifferentialEvolution
+ALO = AntLionOptimizer
+SCA = SineCosinAlgorithm
+SMA = SlimeMouldAlgorithm
+SSA = SalpSwarmAlgorithm
+TSO = TunaSwarmOptimization
+MRFO = MantaRayForagingOptimization

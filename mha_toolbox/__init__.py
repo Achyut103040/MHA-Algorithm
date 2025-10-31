@@ -1,9 +1,9 @@
 """
 MHA Toolbox: Professional Meta-Heuristic Algorithm Library
-Version 1.2.0 - Complete optimization toolbox with 36+ algorithms
+Version 2.0.0 - Complete optimization toolbox with 95+ algorithms and 9 hybrid combinations
 """
 
-__version__ = "1.2.0"
+__version__ = "2.0.0"
 __author__ = "MHA Development Team"
 __license__ = "MIT"
 
