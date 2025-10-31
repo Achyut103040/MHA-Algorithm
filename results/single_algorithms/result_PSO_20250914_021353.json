@@ -1,0 +1,48 @@
+{
+    "algorithm_name": "PSO",
+    "best_fitness": 0.0,
+    "best_solution": [
+        0.26785636332187335,
+        0.9733243480715108,
+        0.03195847499505877,
+        0.9112318526747805
+    ],
+    "convergence_curve": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+    ],
+    "execution_time": 0.31981372833251953,
+    "parameters": {
+        "population_size": 10,
+        "max_iterations": 10,
+        "lower_bound": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "upper_bound": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "dimensions": 4,
+        "verbose": false
+    },
+    "problem_type": "feature_selection",
+    "timestamp": "2025-09-14T02:13:53.970831",
+    "n_selected_features": 2,
+    "selected_feature_indices": [
+        1,
+        3
+    ]
+}
