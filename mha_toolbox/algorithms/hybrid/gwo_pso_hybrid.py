@@ -20,9 +20,16 @@ class GWO_PSO_Hybrid(BaseOptimizer):
         self.c1 = 1.5
         self.c2 = 1.5
     
-    def _optimize(self, objective_function, bounds, dimension):
-        population = np.random.uniform(bounds[0], bounds[1], (self.population_size, dimension))
-        velocity = np.random.uniform(-1, 1, (self.population_size, dimension))
+    def _optimize(self, objective_function, X=None, y=None, **kwargs):
+        if X is not None:
+            dimensions = X.shape[1]
+            bounds = (np.zeros(dimensions), np.ones(dimensions))
+        else:
+            dimensions = kwargs.get('dimensions', 10)
+            bounds = kwargs.get('bounds', (np.zeros(dimensions), np.ones(dimensions)))
+        
+        population = np.random.uniform(bounds[0], bounds[1], (self.population_size_, dimensions))
+        velocity = np.random.uniform(-1, 1, (self.population_size_, dimensions))
         fitness = np.array([objective_function(ind) for ind in population])
         
         personal_best = population.copy()
@@ -38,11 +45,11 @@ class GWO_PSO_Hybrid(BaseOptimizer):
         local_fitness = [fitness.copy()]
         local_positions = [population.copy()]
         
-        for iteration in range(self.max_iterations):
-            a = 2 - 2 * (iteration / self.max_iterations)
-            w_adaptive = self.w * (1 - iteration / self.max_iterations)
+        for iteration in range(self.max_iterations_):
+            a = 2 - 2 * (iteration / self.max_iterations_)
+            w_adaptive = self.w * (1 - iteration / self.max_iterations_)
             
-            for i in range(self.population_size):
+            for i in range(self.population_size_):
                 # GWO position update
                 r1, r2 = np.random.random(2)
                 A1 = 2 * a * r1 - a
@@ -77,7 +84,7 @@ class GWO_PSO_Hybrid(BaseOptimizer):
             
             fitness = np.array([objective_function(ind) for ind in population])
             
-            for i in range(self.population_size):
+            for i in range(self.population_size_):
                 if fitness[i] < personal_best_fitness[i]:
                     personal_best[i] = population[i].copy()
                     personal_best_fitness[i] = fitness[i]

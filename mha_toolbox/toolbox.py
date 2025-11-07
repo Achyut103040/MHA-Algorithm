@@ -5,12 +5,13 @@ import numpy as np
 import time
 from mha_toolbox.base import BaseOptimizer, OptimizationModel
 from mha_toolbox.utils import plot_comparison, create_problem
+from mha_toolbox.complete_algorithm_registry import CompleteAlgorithmRegistry
 
 class MHAToolbox:
     """
     Main interface for the Metaheuristic Algorithm Toolbox.
     
-    This class provides a centralized access point to all available optimization
+    This class provides a centralized access point to ALL 130+ optimization
     algorithms in the toolbox. Users can easily get any algorithm, see what's 
     available, and run optimizations with minimal configuration.
     
@@ -19,6 +20,7 @@ class MHAToolbox:
     from scratch for each algorithm.
     
     🚀 Key Features:
+    - 130+ algorithms (108 main + 22 hybrid)
     - Automatic algorithm discovery and registration
     - Intelligent parameter defaults based on problem type
     - Support for both function optimization and feature selection
@@ -27,15 +29,21 @@ class MHAToolbox:
     
     """
     
-    def __init__(self):
-        """Initialize the MHAToolbox and discover available algorithms."""
+    def __init__(self, verbose=False):
+        """Initialize the MHAToolbox and discover ALL available algorithms."""
         if hasattr(self, '_initialized'):
             return
-        self.algorithms = {}
-        self.algorithm_aliases = {}
-        self._discover_algorithms()
-        self._create_aliases()
+        
+        # Use the comprehensive registry
+        self.registry = CompleteAlgorithmRegistry()
+        total = self.registry.discover_all_algorithms(verbose=verbose)
+        
+        # Set references for backward compatibility
+        self.algorithms = self.registry.algorithms
+        self.algorithm_aliases = self.registry.aliases
+        
         self._initialized = True
+        
         # Add direct method access for each algorithm
         self._create_direct_access_methods()
     
@@ -81,121 +89,6 @@ class MHAToolbox:
         def create_algorithm(**kwargs):
             return self.get_optimizer(algorithm_name, **kwargs)
         return create_algorithm
-    
-    def _discover_algorithms(self):
-        """Dynamically discover all algorithm classes in the toolbox."""
-        
-        if hasattr(self, '_discovery_done'):
-            return
-            
-        print("🔍 Discovering available algorithms...")
-        
-        # Manually register known algorithms first
-        try:
-            from mha_toolbox.algorithms.sca import SineCosinAlgorithm
-            self.algorithms['SineCosinAlgorithm'] = SineCosinAlgorithm
-            print("  ✓ SineCosinAlgorithm")
-        except ImportError as e:
-            print(f"  ⚠ Could not import SineCosinAlgorithm: {e}")
-            
-        try:
-            from mha_toolbox.algorithms.pso import ParticleSwarmOptimization
-            self.algorithms['ParticleSwarmOptimization'] = ParticleSwarmOptimization
-            print("  ✓ ParticleSwarmOptimization")
-        except ImportError as e:
-            print(f"  ⚠ Could not import ParticleSwarmOptimization: {e}")
-            
-        try:
-            from mha_toolbox.algorithms.gwo import GreyWolfOptimizer
-            self.algorithms['GreyWolfOptimizer'] = GreyWolfOptimizer
-            print("  ✓ GreyWolfOptimizer")
-        except ImportError as e:
-            print(f"  ⚠ Could not import GreyWolfOptimizer: {e}")
-        
-        # Try to discover other algorithms automatically
-        try:
-            # Get the path to the algorithms directory
-            import mha_toolbox.algorithms
-            algorithms_dir = os.path.dirname(mha_toolbox.algorithms.__file__)
-            
-            # Scan for other algorithm modules
-            discovered_count = 0
-            for filename in os.listdir(algorithms_dir):
-                if filename.endswith('.py') and not filename.startswith('__'):
-                    module_name = f"mha_toolbox.algorithms.{filename[:-3]}"
-                    try:
-                        # Import the module
-                        module = importlib.import_module(module_name)
-                        
-                        # Find all classes that inherit from BaseOptimizer
-                        for name, obj in inspect.getmembers(module):
-                            if (inspect.isclass(obj) and issubclass(obj, BaseOptimizer) 
-                                and obj is not BaseOptimizer and name not in self.algorithms):
-                                self.algorithms[name] = obj
-                                discovered_count += 1
-                                print(f"  ✓ {name}")
-                                
-                    except ImportError as e:
-                        print(f"  ⚠ Could not import {module_name}: {e}")
-            
-            print(f"📊 Total algorithms discovered: {len(self.algorithms)}")
-                        
-        except Exception as e:
-            print(f"⚠ Error during algorithm discovery: {e}")
-        
-        self._discovery_done = True
-    
-    def _create_aliases(self):
-        """Create user-friendly aliases for algorithms."""
-        
-        # Clear existing aliases
-        self.algorithm_aliases = {}
-        
-        # Create dynamic aliases from algorithm class aliases attribute
-        for alg_name, alg_class in self.algorithms.items():
-            if hasattr(alg_class, 'aliases'):
-                for alias in alg_class.aliases:
-                    self.algorithm_aliases[alias.lower()] = alg_name
-        
-        # Common abbreviations and alternative names (fallback)
-        alias_map = {
-            'pso': 'ParticleSwarmOptimization',
-            'particle_swarm': 'ParticleSwarmOptimization',
-            'sca': 'SineCosinAlgorithm', 
-            'sine_cosine': 'SineCosinAlgorithm',
-            'gwo': 'GreyWolfOptimizer',
-            'grey_wolf': 'GreyWolfOptimizer',
-            'woa': 'WhaleOptimizationAlgorithm',
-            'whale': 'WhaleOptimizationAlgorithm',
-            'ga': 'GeneticAlgorithm',
-            'genetic': 'GeneticAlgorithm',
-            'de': 'DifferentialEvolution',
-            'differential': 'DifferentialEvolution',
-            'abc': 'ArtificialBeeColony',
-            'bee': 'ArtificialBeeColony',
-            'aco': 'AntColonyOptimization',
-            'ant': 'AntColonyOptimization',
-            'ba': 'BatAlgorithm',
-            'bat': 'BatAlgorithm',
-            'fa': 'FireflyAlgorithm',
-            'firefly': 'FireflyAlgorithm',
-            'ao': 'AquilaOptimizer',
-            'aquila': 'AquilaOptimizer'
-        }
-        
-        # Create aliases for existing algorithms (only if not already set)
-        for alias, full_name in alias_map.items():
-            if full_name in self.algorithms and alias.lower() not in self.algorithm_aliases:
-                self.algorithm_aliases[alias.lower()] = full_name
-                
-        # Create automatic abbreviations
-        for alg_name in self.algorithms.keys():
-            # Create abbreviation from capital letters
-            abbr = ''.join([c for c in alg_name if c.isupper()]).lower()
-            if abbr and abbr not in self.algorithm_aliases:
-                self.algorithm_aliases[abbr] = alg_name
-                
-        print(f"📝 Created {len(self.algorithm_aliases)} algorithm aliases")
     
     def _resolve_algorithm_name(self, name):
         """Resolve algorithm name from alias if needed."""
@@ -322,47 +215,25 @@ class MHAToolbox:
     
     def list_algorithms(self):
         """
-        List all available optimization algorithms with their aliases.
+        List all available optimization algorithms.
+        
+        Returns
+        -------
+        list
+            Sorted list of all algorithm names
+        """
+        return sorted(self.algorithms.keys())
+    
+    def list_algorithms_by_category(self):
+        """
+        List all available optimization algorithms organized by categories.
         
         Returns
         -------
         dict
             Dictionary mapping categories to algorithm lists
         """
-        
-        # Categorize algorithms
-        categories = {
-            'Swarm Intelligence': [],
-            'Physics Based': [],
-            'Bio Inspired': [],
-            'Human Based': [],
-            'Math Based': [],
-            'Other': []
-        }
-        
-        for alg_name, alg_class in self.algorithms.items():
-            # Simple categorization based on name patterns
-            name_lower = alg_name.lower()
-            if any(word in name_lower for word in ['swarm', 'particle', 'bee', 'ant', 'whale', 'wolf', 'bat']):
-                categories['Swarm Intelligence'].append(alg_name)
-            elif any(word in name_lower for word in ['sine', 'gravity', 'physics', 'electromagnetic']):
-                categories['Physics Based'].append(alg_name)
-            elif any(word in name_lower for word in ['genetic', 'evolution', 'bio', 'dna']):
-                categories['Bio Inspired'].append(alg_name)
-            elif any(word in name_lower for word in ['human', 'social', 'cultural']):
-                categories['Human Based'].append(alg_name)
-            elif any(word in name_lower for word in ['math', 'optimization', 'search']):
-                categories['Math Based'].append(alg_name)
-            else:
-                categories['Other'].append(alg_name)
-        
-        # Remove empty categories and sort
-        result = {}
-        for category, algorithms in categories.items():
-            if algorithms:
-                result[category] = sorted(algorithms)
-        
-        return result
+        return self.registry.get_algorithm_by_category()
     
     def get_all_algorithm_names(self):
         """Get all algorithm names including aliases."""

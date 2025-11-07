@@ -1,15 +1,19 @@
 """
-MHA Analysis Dashboard - Redesigned Interface
-=============================================
+MHA Toolbox - Web Interface
+============================
 
-A guided, intuitive interface for analyzing metaheuristic algorithms.
+Professional web interface for meta-heuristic algorithms with:
+- Beginner Mode: Guided workflow with recommendations
+- Professional Mode: Full control and advanced features
+- Real-time optimization tracking
+- Interactive visualizations
+- Result export and management
 
-Features:
-- Multi-page navigation (Dashboard Home, New Experiment, Results History)
-- Guided 3-step workflow for new experiments
-- Live progress with algorithm cards
-- Browser-based session persistence
-- Clean, professional design with progressive disclosure
+Usage:
+    python -m mha_toolbox ui
+    
+    Or directly:
+    python mha_web_interface.py
 """
 
 import streamlit as st
@@ -20,7 +24,8 @@ import plotly.express as px
 from datetime import datetime
 from pathlib import Path
 import time
-import contextlib  # <-- ADD THIS IMPORT
+import contextlib
+import sys
 
 # Your wakepy import remains the same
 try:
@@ -31,11 +36,55 @@ except ImportError:
     print("⚠️ wakepy not installed. Sleep prevention disabled.")
     
 # Import helper modules
-from mha_comparison_toolbox import MHAComparisonToolbox
-from mha_toolbox.enhanced_runner import run_comparison_with_live_progress
+# Note: Some modules may not be available if they depend on removed dependencies
+try:
+    from mha_toolbox.enhanced_runner import run_comparison_with_live_progress
+except ImportError:
+    run_comparison_with_live_progress = None
+    print("⚠️ enhanced_runner not available")
+
 from mha_toolbox.persistent_state import PersistentStateManager
 from mha_toolbox.enhanced_session_manager import EnhancedSessionManager
 from mha_toolbox.results_manager import ResultsManager
+from mha_toolbox.algorithm_recommender import AlgorithmRecommender
+try:
+    from mha_toolbox.intelligent_session_manager import get_session_manager
+except ImportError:
+    get_session_manager = None
+    print("⚠️ intelligent_session_manager not available")
+
+# Import new feature modules
+from mha_toolbox.professional_visualizer import (
+    plot_feature_threshold,
+    plot_comparison_box_with_stats,
+    create_workflow_dashboard,
+    export_results_to_csv,
+    create_statistical_table
+)
+from mha_toolbox.feature_integration import (
+    DatasetGenerator,
+    BinaryMulticlassSupport,
+    MLflowIntegration,
+    render_enhanced_algorithm_selection,
+    render_dimension_aware_hyperparameters
+)
+from mha_toolbox.algorithm_categories import (
+    ALGORITHM_CATEGORIES,
+    recommend_algorithms
+)
+from mha_toolbox.hyperparameter_config import (
+    HyperparameterManager,
+    get_preset_config
+)
+from mha_toolbox.beginner_mode import BeginnerMode
+# Use optimized multi-user profile system
+from mha_toolbox.user_profile_optimized import (
+    get_current_user_info,
+    create_session_profile,
+    load_profile,
+    save_profile,
+    UserProfile
+)
 
 def toggle_algorithm_selection(algorithm_name):
     """Callback to toggle algorithm selection."""
@@ -43,20 +92,18 @@ def toggle_algorithm_selection(algorithm_name):
         st.session_state.selected_algorithms.remove(algorithm_name)
     else:
         st.session_state.selected_algorithms.append(algorithm_name)
-    # FIXED: Remove st.rerun() - Streamlit auto-reruns after callback
 
 # Page configuration
 st.set_page_config(
-    page_title="MHA Analysis Dashboard",
+    page_title="MHA Toolbox - Optimization Suite",
     page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for clean, professional design
+# Custom CSS for modern, professional design
 st.markdown("""
 <style>
-    
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
@@ -67,47 +114,119 @@ st.markdown("""
     }
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
-        border-radius: 10px;
+        padding: 2.5rem;
+        border-radius: 12px;
         margin-bottom: 2rem;
         text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .main-header h1 {
         color: #ffffff;
         margin: 0;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
+        font-weight: 700;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     .main-header p {
         color: #f0f0f0;
         margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
-    .algorithm-card {
-        background: #262730; /* Dark background for the card */
+    .mode-selector {
+        background: #f8f9fa;
         padding: 1.5rem;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
+        border-radius: 10px;
         margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 2px solid #e0e0e0;
+        color: #1e1e1e;
+    }
+    .mode-selector h3, .mode-selector h4, .mode-selector p, .mode-selector label {
+        color: #1e1e1e !important;
+    }
+    .algorithm-card {
+        background: #262730;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 5px solid #667eea;
+        margin: 1rem 0;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
         color: #FAFAFA;
+        transition: all 0.3s ease;
+    }
+    .algorithm-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 12px rgba(0,0,0,0.2);
     }
     .algorithm-card h4, .algorithm-card p {
-        color: #FAFAFA; /* Explicitly style header and paragraph text */
+        color: #FAFAFA;
     }
     .algorithm-card-running { border-left-color: #ffa500; }
     .algorithm-card-completed { border-left-color: #28a745; }
     .algorithm-card-failed { border-left-color: #dc3545; }
-    .metric-card {
-        background: #262730; /* Dark background */
-        padding: 1.5rem;
+    .recommendation-card {
+        background: #fff3cd;
+        padding: 1rem;
         border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        border: 1px solid #444;
+        border-left: 4px solid #ffc107;
+        margin: 0.5rem 0;
+        color: #1e1e1e;
     }
-    .metric-card h3, .metric-card p {
-        color: #FAFAFA;
+    .recommendation-card h4, .recommendation-card p, .recommendation-card span {
+        color: #1e1e1e !important;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        padding: 1.5rem !important;
+        border-radius: 10px !important;
+        color: white !important;
+        text-align: center !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+    }
+    
+    .metric-card h1, .metric-card h2, .metric-card h3, 
+    .metric-card h4, .metric-card h5, .metric-card h6 {
+        color: white !important;
+    }
+    
+    .metric-card p, .metric-card span, .metric-card div {
+        color: white !important;
+    }
+    .success-box {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-left: 4px solid #28a745;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: #155724;
+    }
+    .success-box h4, .success-box p, .success-box span {
+        color: #155724 !important;
+    }
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffeeba;
+        border-left: 4px solid #ffc107;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: #856404;
+    }
+    .warning-box h4, .warning-box p, .warning-box span {
+        color: #856404 !important;
+    }
+    .info-box {
+        background: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-left: 4px solid #17a2b8;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: #0c5460;
+    }
+    .info-box h4, .info-box p, .info-box span {
+        color: #0c5460 !important;
     }
     .step-indicator {
         display: inline-block;
@@ -125,6 +244,139 @@ st.markdown("""
         border: 1px solid #444;
         padding: 1rem;
         border-radius: 8px;
+    }
+    
+    /* Fix white section visibility - ensure dark text in all containers */
+    div[data-testid="stVerticalBlock"] > div[style*="background-color"] {
+        color: #1e1e1e !important;
+    }
+    
+    /* Streamlit expanders - better contrast */
+    div[data-testid="stExpander"] {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        color: #1e1e1e;
+    }
+    
+    div[data-testid="stExpander"] summary {
+        color: #1e1e1e !important;
+        font-weight: 600;
+    }
+    
+    div[data-testid="stExpander"] div[role="button"] {
+        color: #1e1e1e !important;
+    }
+    
+    /* Container styling for white sections */
+    section[data-testid="stSidebar"] {
+        background-color: #262730;
+    }
+    
+    /* Main content area - ensure readability */
+    .main .block-container {
+        color: #1e1e1e;
+    }
+    
+    /* Fix text in white cards/containers */
+    div[data-baseweb="card"],
+    div[data-testid="column"] > div {
+        color: #1e1e1e;
+    }
+    
+    /* Markdown text in main area */
+    .main p, .main li, .main span, .main div {
+        color: #1e1e1e !important;
+    }
+    
+    /* Headers in main area */
+    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
+        color: #1e1e1e !important;
+    }
+    
+    /* AGGRESSIVE: Force all elements in main to have dark text */
+    /* BUT exclude special cards that have their own color schemes */
+    .main *:not(.metric-card):not(.metric-card *):not(.algorithm-card):not(.algorithm-card *):not(.main-header):not(.main-header *) {
+        color: #1e1e1e !important;
+    }
+    
+    /* CRITICAL: Override Streamlit's default markdown styling */
+    .main .stMarkdown:not(.metric-card):not(.metric-card *), 
+    .main .stMarkdown *:not(.metric-card):not(.metric-card *) {
+        color: #1e1e1e !important;
+    }
+    
+    /* Column content - but not if it's inside special cards */
+    div[data-testid="column"]:not(:has(.metric-card)), 
+    div[data-testid="column"]:not(:has(.metric-card)) * {
+        color: #1e1e1e !important;
+    }
+    
+    /* Block container content */
+    .block-container:not(:has(.metric-card)), 
+    .block-container:not(:has(.metric-card)) * {
+        color: #1e1e1e !important;
+    }
+    
+    /* Element container */
+    .element-container:not(:has(.metric-card)), 
+    .element-container:not(:has(.metric-card)) * {
+        color: #1e1e1e !important;
+    }
+    
+    /* Tables */
+    .main table {
+        color: #1e1e1e !important;
+    }
+    
+    /* Input fields - better visibility */
+    input, textarea, select {
+        background-color: #ffffff !important;
+        color: #1e1e1e !important;
+        border: 1px solid #ced4da !important;
+    }
+    
+    /* Buttons - maintain visibility */
+    button[kind="primary"] {
+        background-color: #667eea !important;
+        color: #ffffff !important;
+    }
+    
+    button[kind="secondary"] {
+        background-color: #6c757d !important;
+        color: #ffffff !important;
+    }
+    
+    /* Radio buttons and checkboxes labels */
+    label {
+        color: #1e1e1e !important;
+    }
+    
+    /* Selectbox and multiselect */
+    div[data-baseweb="select"] {
+        background-color: #ffffff;
+        color: #1e1e1e;
+    }
+    
+    /* Info messages */
+    div[data-testid="stMarkdownContainer"] {
+        color: #1e1e1e;
+    }
+    
+    /* Code blocks - keep readable */
+    code {
+        background-color: #f8f9fa;
+        color: #d63384;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    
+    pre {
+        background-color: #f8f9fa;
+        color: #1e1e1e;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,6 +405,15 @@ managers = {
     'results': safe_managers['results']
 }
 
+# Initialize user profile with session-based isolation for multi-user support
+if 'user_profile' not in st.session_state:
+    username, system_id, session_id = get_current_user_info()
+    # Create session-based profile for concurrent user access
+    st.session_state.user_profile = create_session_profile(username, session_id=session_id, system_id=system_id)
+    st.session_state.username = username
+    st.session_state.system_id = system_id
+    st.session_state.session_id = session_id
+
 # Initialize session state
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'dashboard_home'
@@ -162,6 +423,9 @@ if 'selected_algorithms' not in st.session_state:
     st.session_state.selected_algorithms = []
 if 'experiment_results' not in st.session_state:
     st.session_state.experiment_results = {}
+if 'interface_mode' not in st.session_state:
+    # Load preferred mode from user profile
+    st.session_state.interface_mode = st.session_state.user_profile.preferences.get('mode', 'Professional')
 
 
 def main():
@@ -169,6 +433,29 @@ def main():
     
     # Sidebar Navigation
     with st.sidebar:
+        # User Profile Section
+        st.markdown("### 👤 User Profile")
+        st.write(f"**User:** {st.session_state.username}")
+        st.write(f"**System:** {st.session_state.system_id[:8]}...")
+        
+        # Mode Toggle
+        st.markdown("---")
+        st.markdown("### 🎯 Interface Mode")
+        new_mode = st.radio(
+            "Select Mode",
+            ["Beginner", "Professional"],
+            index=0 if st.session_state.interface_mode == "Beginner" else 1,
+            help="Beginner: Guided workflow with recommendations\nProfessional: Full control and advanced features"
+        )
+        
+        if new_mode != st.session_state.interface_mode:
+            st.session_state.interface_mode = new_mode
+            # Save preference to user profile
+            st.session_state.user_profile.preferences['mode'] = new_mode
+            save_profile(st.session_state.user_profile)
+            st.rerun()
+        
+        st.markdown("---")
         st.markdown("## 📍 Navigation")
         
         # Navigation buttons
@@ -217,11 +504,12 @@ def show_dashboard_home():
     
     st.markdown("## 🏠 Dashboard Home")
     
-    # The "Welcome Back" and "Quick Actions" sections remain the same
-    session_id_from_browser = managers['persistent'].get_session_id_from_browser()
-    if session_id_from_browser:
-        # (existing welcome back logic)
-        session_context = managers['session'].get_session_context(session_id_from_browser)
+    # Quick Actions
+    st.markdown("### ⚡ Quick Actions")
+    
+    # Simplified - no session recovery for now
+    if False:  # Disabled session recovery
+        session_context = {}
         if session_context:
             st.success(f"👋 **Welcome back!** You have a previous session on the **{session_context['dataset_name']}** dataset.")
             col1, col2 = st.columns(2)
@@ -291,6 +579,14 @@ def show_new_experiment():
     
     st.markdown("## 🔬 New Experiment")
     
+    # Check interface mode and render accordingly
+    if st.session_state.interface_mode == "Beginner":
+        # Render beginner mode with guided workflow
+        beginner = BeginnerMode()
+        beginner.render()
+        return
+    
+    # Professional Mode continues with existing workflow
     # Check if continuing a session
     if 'continue_session_context' in st.session_state:
         context = st.session_state.continue_session_context
@@ -330,7 +626,7 @@ def show_dataset_selection_tab():
     # Dataset source selection
     data_source = st.radio(
         "Choose data source:",
-        ["📦 Sample Datasets", "📤 Upload CSV"],
+        ["📦 Sample Datasets", "📤 Upload CSV", "🎲 Generate Dataset"],
         horizontal=True
     )
     
@@ -368,7 +664,7 @@ def show_dataset_selection_tab():
                         st.success(f"✅ Selected: {dataset['name']}")
                         st.info("👉 Now proceed to **Step 2: Choose Algorithms**")
     
-    else:
+    elif data_source == "📤 Upload CSV":
         # CSV Upload
         st.markdown("#### Upload Your Dataset")
         
@@ -398,6 +694,22 @@ def show_dataset_selection_tab():
             except Exception as e:
                 st.error(f"Error reading file: {e}")
     
+    elif data_source == "🎲 Generate Dataset":
+        # Dataset Generator
+        st.markdown("#### 🎲 Generate Synthetic Dataset")
+        st.info("Generate domain-specific datasets for testing optimization algorithms")
+        
+        # Render dataset generator UI
+        generator = DatasetGenerator()
+        result = generator.render_generator_ui()
+        
+        if result:
+            st.session_state.selected_dataset = f"Generated_{result['sector']}_{result['n_samples']}x{result['n_features']}"
+            st.session_state.dataset_type = 'generated'
+            st.session_state.generated_data = result
+            st.success(f"✅ Dataset generated: {result['n_samples']} samples, {result['n_features']} features")
+            st.info("👉 Now proceed to **Step 2: Choose Algorithms**")
+    
     # Show current selection
     if st.session_state.selected_dataset:
         st.markdown("---")
@@ -413,13 +725,61 @@ def show_algorithm_selection_tab():
         st.warning("⚠️ Please select a dataset first in **Step 1**")
         return
     
+    # AI Recommendations based on dataset characteristics
+    st.markdown("#### 🤖 AI Recommendations")
+    
+    # Get dataset info for recommendations
+    if st.session_state.dataset_type == 'generated' and 'generated_data' in st.session_state:
+        data_info = st.session_state.generated_data
+        n_features = data_info['n_features']
+        n_samples = data_info['n_samples']
+        n_classes = data_info.get('n_classes', 2)
+    elif st.session_state.dataset_type == 'uploaded' and 'uploaded_data' in st.session_state:
+        df = st.session_state.uploaded_data
+        n_features = df.shape[1] - 1
+        n_samples = df.shape[0]
+        n_classes = len(df[st.session_state.target_column].unique()) if st.session_state.target_column in df.columns else 2
+    else:
+        # Default for sample datasets
+        dataset_info_map = {
+            "Breast Cancer": (30, 569, 2),
+            "Wine": (13, 178, 3),
+            "Iris": (4, 150, 3),
+            "Digits": (64, 1797, 10),
+        }
+        n_features, n_samples, n_classes = dataset_info_map.get(st.session_state.selected_dataset, (10, 100, 2))
+    
+    # Get AI recommendations
+    recommendations = recommend_algorithms(n_features, n_samples, n_classes)
+    
+    with st.expander("📊 View AI Recommendations", expanded=True):
+        st.write(f"**Dataset:** {n_features} features, {n_samples} samples, {n_classes} classes")
+        
+        rec_cols = st.columns(5)
+        for i, (algo, score) in enumerate(recommendations[:10]):
+            with rec_cols[i % 5]:
+                st.metric(algo.upper(), f"{score:.2f}")
+        
+        if st.button("✨ Use Recommended Algorithms", key="use_recommended"):
+            st.session_state.selected_algorithms = [algo for algo, _ in recommendations[:10]]
+            st.success("✅ Top 10 recommended algorithms selected!")
+            st.rerun()
+    
     # Available algorithms (grouped by category)
     algorithm_groups = {
         "🐝 Swarm Intelligence": ["pso", "alo", "woa", "gwo", "ssa", "mrfo", "spider"],
         "🧬 Evolutionary": ["ga", "de", "eo", "innov"],
         "🌊 Physics-Based": ["sca", "sa", "hgso", "wca", "wdo"],
         "🔬 Bio-Inspired": ["ba", "fa", "csa", "coa", "msa"],
-        "🌟 Novel": ["ao", "aoa", "cgo", "fbi", "gbo", "ica", "pfa", "qsa", "sma", "spbo", "tso", "vcs", "vns"]
+        "🌟 Novel": ["ao", "aoa", "cgo", "fbi", "gbo", "ica", "pfa", "qsa", "sma", "spbo", "tso", "vcs", "vns"],
+        "🔥 Hybrid Algorithms": [
+            "pso_ga_hybrid", "gwo_pso_hybrid", "de_pso_hybrid",
+            "sa_ga_hybrid", "woa_ga_hybrid", "ba_pso_hybrid",
+            "sca_pso_hybrid", "aco_pso_hybrid", "abc_de_hybrid",
+            "fa_de_hybrid", "cs_ga_hybrid", "alo_pso_hybrid",
+            "ssa_de_hybrid", "mvo_ga_hybrid", "hho_de_hybrid",
+            "gto_pso_hybrid", "aoa_ga_hybrid", "rsa_pso_hybrid"
+        ]
     }
     
     # Search bar
@@ -555,30 +915,80 @@ def show_configuration_and_run_tab():
     st.markdown("---")
     st.markdown("#### ⚙️ Parameters")
     
-    # Parameter presets
-    preset = st.selectbox(
-        "Parameter preset:",
-        ["Demo (Fast)", "Standard", "Thorough", "Custom"],
-        help="Pre-configured parameter sets for different needs"
+    # Hyperparameter Preset Configuration
+    st.markdown("##### 🎛️ Preset Configuration")
+    preset_type = st.selectbox(
+        "Choose preset:",
+        ["fast", "standard", "thorough", "research"],
+        format_func=lambda x: {
+            "fast": "⚡ Fast (Demo)",
+            "standard": "⚖️ Standard (Balanced)",
+            "thorough": "🎯 Thorough (Comprehensive)",
+            "research": "🔬 Research (Maximum)"
+        }[x],
+        help="Pre-configured parameter sets optimized for different scenarios"
     )
     
-    if preset == "Demo (Fast)":
-        max_iter, pop_size, n_runs, timeout = 20, 15, 2, 5
-        st.info("⚡ Fast demo settings for quick results")
-    elif preset == "Standard":
-        max_iter, pop_size, n_runs, timeout = 50, 25, 3, 10
-        st.info("⚖️ Balanced settings for good results")
-    elif preset == "Thorough":
-        max_iter, pop_size, n_runs, timeout = 100, 40, 5, 20
-        st.info("🎯 Comprehensive settings for best results")
+    # Get preset configuration
+    preset_config = get_preset_config(preset_type)
+    
+    # Display preset info
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Population", f"{preset_config['population_multiplier']}x")
+    with col2:
+        st.metric("Iterations", f"{preset_config['iteration_multiplier']}x")
+    with col3:
+        st.metric("Runs", preset_config['n_runs'])
+    with col4:
+        st.metric("Timeout", f"{preset_config.get('timeout_minutes', 10)} min")
+    
+    # Dimension-aware adjustment
+    if st.session_state.dataset_type == 'generated' and 'generated_data' in st.session_state:
+        n_features = st.session_state.generated_data['n_features']
     else:
-        col1, col2 = st.columns(2)
-        with col1:
-            max_iter = st.slider("Max Iterations", 10, 200, 50)
-            pop_size = st.slider("Population Size", 10, 100, 25)
-        with col2:
-            n_runs = st.slider("Number of Runs", 1, 10, 3)
-            timeout = st.slider("Timeout (minutes)", 1, 60, 10)
+        n_features = 30  # Default
+    
+    hp_manager = HyperparameterManager(n_features)
+    adjusted_params = hp_manager.get_algorithm_parameters("pso")  # Get base params
+    
+    st.info(f"📊 Dimension-aware: Adjusted for {n_features} features → Pop: {adjusted_params['population_size']}, Iter: {adjusted_params['max_iterations']}")
+    
+    # MLflow Integration
+    st.markdown("##### 📊 MLflow Tracking")
+    enable_mlflow = MLflowIntegration.render_mlflow_ui()
+    
+    # Parameter presets (keeping backward compatibility)
+    preset = st.selectbox(
+        "Legacy preset (override):",
+        ["Use Preset Above", "Demo (Fast)", "Standard", "Thorough", "Custom"],
+        help="Legacy parameter configuration (optional override)"
+    )
+    
+    if preset != "Use Preset Above":
+        if preset == "Demo (Fast)":
+            max_iter, pop_size, n_runs, timeout = 20, 15, 2, 5
+            st.info("⚡ Fast demo settings for quick results")
+        elif preset == "Standard":
+            max_iter, pop_size, n_runs, timeout = 50, 25, 3, 10
+            st.info("⚖️ Balanced settings for good results")
+        elif preset == "Thorough":
+            max_iter, pop_size, n_runs, timeout = 100, 40, 5, 20
+            st.info("🎯 Comprehensive settings for best results")
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                max_iter = st.slider("Max Iterations", 10, 200, 50)
+                pop_size = st.slider("Population Size", 10, 100, 25)
+            with col2:
+                n_runs = st.slider("Number of Runs", 1, 10, 3)
+                timeout = st.slider("Timeout (minutes)", 1, 60, 10)
+    else:
+        # Use preset config values
+        max_iter = int(adjusted_params['max_iterations'] * preset_config['iteration_multiplier'])
+        pop_size = int(adjusted_params['population_size'] * preset_config['population_multiplier'])
+        n_runs = preset_config['n_runs']
+        timeout = preset_config.get('timeout_minutes', 10)
     
     # Advanced options (collapsed)
     with st.expander("⚙️ Advanced Options"):

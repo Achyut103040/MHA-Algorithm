@@ -29,7 +29,7 @@ import io
 class EnhancedSessionManager:
     """Advanced session management with revival and update capabilities"""
     
-    def __init__(self, detailed_collector):
+    def __init__(self, detailed_collector=None):
         self.collector = detailed_collector
         self.current_session_data = None
         self.dashboard_data = {}

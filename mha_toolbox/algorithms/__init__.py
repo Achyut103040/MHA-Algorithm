@@ -48,6 +48,33 @@ from .foa import FruitFlyOptimization
 from .gao import GiantArmadilloOptimization
 from .hba import HoneyBadgerAlgorithm
 from .hgs import HungerGamesSearch
+
+# Hybrid Algorithms - now imported from individual files in hybrid folder
+from .hybrid import (
+    PSO_GA_Hybrid,
+    GWO_PSO_Hybrid,
+    DE_PSO_Hybrid,
+    GA_SA_Hybrid,
+    WOA_GA_Hybrid,
+    ABC_DE_Hybrid,
+    FA_DE_Hybrid,
+    CS_GA_Hybrid,
+    ALO_PSO_Hybrid,
+    SSA_DE_Hybrid,
+    MFO_DE_Hybrid,
+    DA_GA_Hybrid,
+    FPA_GA_Hybrid,
+    HS_DE_Hybrid,
+    KH_PSO_Hybrid,
+    TS_GA_Hybrid,
+    ACO_PSO_Hybrid,
+    FA_GA_Hybrid,
+    WOA_SMA_Hybrid,
+    SMA_DE_Hybrid,
+    SA_PSO_Hybrid,
+    GWO_DE_Hybrid,
+)
+
 from .koa import KookaburraOptimization
 from .kh import KrillHerdAlgorithm
 from .mpa import MarinePredatorsAlgorithm
@@ -163,7 +190,30 @@ __all__ = [
     'CrossEntropyMethod',
     'RUNAlgorithm',
     'GerminalCenterOptimization',
-    'TabuSearch'
+    'TabuSearch',
+    # Hybrid Algorithms - from individual files
+    'PSO_GA_Hybrid',
+    'GWO_PSO_Hybrid',
+    'DE_PSO_Hybrid',
+    'GA_SA_Hybrid',
+    'WOA_GA_Hybrid',
+    'ACO_PSO_Hybrid',
+    'ABC_DE_Hybrid',
+    'FA_DE_Hybrid',
+    'CS_GA_Hybrid',
+    'ALO_PSO_Hybrid',
+    'SSA_DE_Hybrid',
+    'MFO_DE_Hybrid',
+    'DA_GA_Hybrid',
+    'FPA_GA_Hybrid',
+    'HS_DE_Hybrid',
+    'KH_PSO_Hybrid',
+    'TS_GA_Hybrid',
+    'FA_GA_Hybrid',
+    'WOA_SMA_Hybrid',
+    'SMA_DE_Hybrid',
+    'SA_PSO_Hybrid',
+    'GWO_DE_Hybrid',
 ]
 
 # Common aliases for convenience

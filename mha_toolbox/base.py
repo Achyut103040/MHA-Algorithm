@@ -1,3 +1,4 @@
+
 import numpy as np
 import time
 import json
@@ -74,6 +75,12 @@ class OptimizationModel:
         self.timestamp_ = datetime.now().isoformat()
         self.local_fitness_ = local_fitness
         self.local_positions_ = local_positions
+        
+        # Error tracking and validation
+        self.error_log_ = []
+        self.warnings_ = []
+        self.validation_status_ = 'unknown'
+        
         # For feature selection, store binary solution and selected features
         if self.problem_type_ == 'feature_selection':
             self.best_solution_binary_ = (self.best_solution_ > 0.5).astype(int)
@@ -82,6 +89,91 @@ class OptimizationModel:
         # Store a reference to the data if provided
         self._X_data_ = X_data
         self._y_data_ = y_data
+    
+    def add_error(self, error_msg, iteration=None, severity='error'):
+        """
+        Log an error that occurred during optimization.
+        
+        Parameters
+        ----------
+        error_msg : str
+            Error message
+        iteration : int, optional
+            Iteration at which error occurred
+        severity : str, default='error'
+            Severity level: 'error', 'warning', 'info'
+        """
+        error_entry = {
+            'message': error_msg,
+            'iteration': iteration,
+            'severity': severity,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        if severity == 'warning':
+            self.warnings_.append(error_entry)
+        else:
+            self.error_log_.append(error_entry)
+    
+    def is_successful(self):
+        """
+        Check if optimization completed successfully.
+        
+        Returns
+        -------
+        bool
+            True if no critical errors and valid results exist
+        """
+        has_critical_errors = any(e.get('severity') == 'error' for e in self.error_log_)
+        has_valid_results = (self.best_fitness_ is not None and 
+                           not np.isnan(self.best_fitness_) and 
+                           not np.isinf(self.best_fitness_))
+        
+        return not has_critical_errors and has_valid_results
+    
+    def get_convergence_quality(self):
+        """
+        Assess convergence quality based on improvement trend.
+        
+        Returns
+        -------
+        dict
+            Quality metrics including improvement rate, stagnation detection
+        """
+        if len(self.global_fitness_) < 2:
+            return {'quality': 'insufficient_data', 'improvement': 0.0}
+        
+        # Calculate improvement
+        initial_fitness = self.global_fitness_[0]
+        final_fitness = self.global_fitness_[-1]
+        improvement = initial_fitness - final_fitness
+        improvement_pct = (improvement / abs(initial_fitness)) * 100 if initial_fitness != 0 else 0
+        
+        # Detect stagnation (no improvement in last 20% of iterations)
+        last_20_pct = int(len(self.global_fitness_) * 0.2)
+        if last_20_pct > 0:
+            recent_improvement = self.global_fitness_[-last_20_pct] - self.global_fitness_[-1]
+            is_stagnant = abs(recent_improvement) < 1e-6
+        else:
+            is_stagnant = False
+        
+        # Assess quality
+        if improvement_pct > 10:
+            quality = 'excellent'
+        elif improvement_pct > 1:
+            quality = 'good'
+        elif improvement_pct > 0.01:
+            quality = 'fair'
+        else:
+            quality = 'poor'
+        
+        return {
+            'quality': quality,
+            'improvement': improvement,
+            'improvement_pct': improvement_pct,
+            'is_stagnant': is_stagnant,
+            'n_iterations': len(self.global_fitness_)
+        }
 
     def summary(self):
         """
@@ -562,3 +654,6 @@ class BaseOptimizer(ABC):
                 (best_solution, best_fitness, global_fitness, local_fitness, local_positions)
             """
             pass
+
+# Alias for backward compatibility
+OptimizationAlgorithm = BaseOptimizer

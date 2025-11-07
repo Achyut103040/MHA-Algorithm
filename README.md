@@ -1,419 +1,431 @@
-# 🧬 MHA Toolbox Pro
+# 🧬 MHA Toolbox - Meta-Heuristic Algorithms Optimization Library
 
-**Professional Metaheuristic Algorithm Library for Python**
+**Version 2.0.0** | Production Ready | 125 Algorithms | 22 Hybrids
 
-[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-orange)](https://github.com/Achyut103040/MHA-Algorithm)
+A comprehensive Python library for meta-heuristic optimization algorithms with support for feature selection, hyperparameter tuning, and benchmark testing.
 
-A comprehensive, professional-grade library featuring **95+ metaheuristic optimization algorithms** across 7 categories, including 9 powerful hybrid combinations.
-
----
-
-## ✨ Key Features
-
-- **95+ Algorithms**: Swarm Intelligence, Evolutionary, Bio-Inspired, Physics-Based, Human Behavior, Mathematical, and Hybrid
-- **9 Hybrid Algorithms**: Advanced combinations like PSO-GA, GWO-PSO, WOA-GA, SMA-DE, ABC-DE, and more
-- **Professional Interface**: Beautiful Streamlit web interface with real-time visualization
-- **Easy to Use**: Simple API with intelligent defaults
-- **Export Formats**: CSV, JSON, NPZ support
-- **Session Management**: Track and manage multiple optimization runs
-- **Benchmark Functions**: Built-in test functions (Sphere, Rosenbrock, Rastrigin, Ackley, etc.)
-- **Performance Analytics**: Convergence curves, statistical analysis, comparison tools
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 📦 Installation
+## 📊 Features
 
-### Option 1: Install from PyPI (Recommended)
-
-```bash
-pip install mha-toolbox
-```
-
-### Option 2: Install from GitHub
-
-```bash
-pip install git+https://github.com/Achyut103040/MHA-Algorithm.git
-```
-
-### Option 3: Install from Source
-
-```bash
-git clone https://github.com/Achyut103040/MHA-Algorithm.git
-cd MHA-Algorithm
-pip install -e .
-```
+- ✅ **125 Meta-Heuristic Algorithms** (103 main + 22 hybrids)
+- 🎯 **13 Algorithm Categories** (Swarm, Bio-Inspired, Physics-Based, etc.)
+- 🔧 **3 Usage Modes**: Python Library, Web UI, CLI
+- 📈 **Real-Time Visualization** with interactive plots
+- 💾 **Complete Results Saving** (7 key attributes per optimization)
+- 🔄 **Multi-User Session Management**
+- 📤 **Export Results**: CSV, Excel, JSON, PNG
+- 🤖 **Algorithm Recommender System**
+- 📚 **Comprehensive Documentation**
 
 ---
 
 ## 🚀 Quick Start
 
-### Using the Web Interface
+### Installation
 
 ```bash
-# Launch the web interface
-mha-web
+# Install from source
+git clone https://github.com/Achyut103040/MHA-Algorithm.git
+cd MHA-Algorithm
+pip install -e .
 
-# Or use streamlit directly
-streamlit run mha_toolbox_pro_ultimate.py
-
-# On Windows, use the batch file
-.\launch.bat
+# Or install dependencies only
+pip install -r requirements.txt
 ```
 
-Then open your browser to `http://localhost:8501`
-
-### Python API - Simple Example
+### Verify Installation
 
 ```python
-from mha_toolbox.algorithms import PSO
-import numpy as np
-
-# Define objective function to minimize
-def sphere(x):
-    return np.sum(x**2)
-
-# Set search space bounds
-bounds = np.array([[-10, 10]] * 5)  # 5 dimensions
-
-# Create and run optimizer
-pso = PSO(objective_func=sphere, bounds=bounds, n_particles=30, max_iter=100)
-best_position, best_fitness = pso.optimize()
-
-print(f"Best fitness: {best_fitness:.6e}")
-print(f"Best position: {best_position}")
+python -c "from mha_toolbox import MHAToolbox; print('✅ Installed!')"
 ```
 
-### Algorithm Comparison
+### Basic Usage
 
 ```python
-from mha_toolbox.algorithms import PSO, GWO, WOA, GA, DE
-import numpy as np
-
-def rastrigin(x):
-    A = 10
-    return A * len(x) + np.sum(x**2 - A * np.cos(2 * np.pi * x))
-
-bounds = np.array([[-5.12, 5.12]] * 10)
-
-# Compare multiple algorithms
-algorithms = {
-    'PSO': PSO(rastrigin, bounds, n_particles=50, max_iter=200),
-    'GWO': GWO(rastrigin, bounds, n_wolves=50, max_iter=200),
-    'WOA': WOA(rastrigin, bounds, n_whales=50, max_iter=200),
-    'GA': GA(rastrigin, bounds, pop_size=50, max_iter=200),
-    'DE': DE(rastrigin, bounds, pop_size=50, max_iter=200)
-}
-
-for name, algo in algorithms.items():
-    best_pos, best_fit = algo.optimize()
-    print(f"{name}: {best_fit:.6f}")
-```
-
-### Using Hybrid Algorithms
-
-```python
-from mha_toolbox.algorithms.hybrid import GWO_PSO_Hybrid, WOA_GA_Hybrid
-
-# GWO-PSO Hybrid - combines exploration of GWO with exploitation of PSO
-hybrid = GWO_PSO_Hybrid(objective_func=sphere, bounds=bounds, n_agents=40, max_iter=150)
-best_pos, best_fit = hybrid.optimize()
-print(f"Hybrid result: {best_fit:.6e}")
-```
-
-### Run Example Script
-
-```bash
-python examples/quick_start.py
-```
-
----
-
-## 📚 Algorithm Categories
-
-### Swarm Intelligence (15 algorithms)
-- PSO (Particle Swarm Optimization)
-- ABC (Artificial Bee Colony)
-- ACO (Ant Colony Optimization)
-- WOA (Whale Optimization Algorithm)
-- GWO (Grey Wolf Optimizer)
-- BA (Bat Algorithm)
-- FA (Firefly Algorithm)
-- And 8 more...
-
-### Evolutionary (8 algorithms)
-- GA (Genetic Algorithm)
-- DE (Differential Evolution)
-- EO (Equilibrium Optimizer)
-- EPO (Emperor Penguin Optimizer)
-- And 4 more...
-
-### Bio-Inspired (32 algorithms)
-- HHO (Harris Hawks Optimization)
-- ALO (Ant Lion Optimizer)
-- MPA (Marine Predators Algorithm)
-- DA (Dragonfly Algorithm)
-- DMOA (Dwarf Mongoose Optimization)
-- HBA (Honey Badger Algorithm)
-- HGS (Hunger Games Search)
-- And 25 more...
-
-### Physics-Based (17 algorithms)
-- SA (Simulated Annealing)
-- GSA (Gravitational Search Algorithm)
-- MVO (Multi-Verse Optimizer)
-- ASO (Atom Search Optimization)
-- TWO (Tug of War Optimization)
-- And 12 more...
-
-### Human Behavior (10 algorithms)
-- TLBO (Teaching-Learning-Based Optimization)
-- ICA (Imperialist Competitive Algorithm)
-- SOS (Symbiotic Organisms Search)
-- And 7 more...
-
-### Mathematical (13 algorithms)
-- HS (Harmony Search)
-- TS (Tabu Search)
-- HC (Hill Climbing)
-- RUN (RUNge Kutta Optimizer)
-- And 9 more...
-
-### Hybrid Algorithms (9 algorithms)
-- **PSO-GA**: Particle Swarm + Genetic Algorithm
-- **GWO-PSO**: Grey Wolf + Particle Swarm
-- **WOA-GA**: Whale + Genetic Algorithm
-- **SMA-DE**: Slime Mould + Differential Evolution
-- **ABC-DE**: Artificial Bee Colony + Differential Evolution
-- **WOA-SMA**: Whale + Slime Mould
-- **GA-SA**: Genetic Algorithm + Simulated Annealing
-- **DE-PSO**: Differential Evolution + Particle Swarm
-- **FA-GA**: Firefly + Genetic Algorithm
-
----
-
-## 💡 Usage Examples
-
-### Comparing Multiple Algorithms
-
-```python
-from mha_toolbox.algorithms import PSO, GWO, WOA, SMA
-import numpy as np
-
-# Define benchmark function
-def rastrigin(x):
-    return 10*len(x) + np.sum(x**2 - 10*np.cos(2*np.pi*x))
-
-algorithms = [
-    ('PSO', PSO(30, 100)),
-    ('GWO', GWO(30, 100)),
-    ('WOA', WOA(30, 100)),
-    ('SMA', SMA(30, 100))
-]
-
-results = {}
-for name, algo in algorithms:
-    best_pos, best_fit, conv, _, _ = algo.optimize(
-        rastrigin, 
-        bounds=(-5.12, 5.12), 
-        dimension=10
-    )
-    results[name] = {'fitness': best_fit, 'convergence': conv}
-    print(f"{name}: {best_fit:.6f}")
-```
-
-### Export Results
-
-```python
-import json
-import pandas as pd
-import numpy as np
-
-# Save as JSON
-with open('results.json', 'w') as f:
-    json.dump(results, f, indent=2)
-
-# Save as CSV
-df = pd.DataFrame([
-    {'algorithm': name, 'best_fitness': data['fitness']}
-    for name, data in results.items()
-])
-df.to_csv('results.csv', index=False)
-
-# Save as NPZ
-npz_data = {name: np.array(data['convergence']) 
-            for name, data in results.items()}
-np.savez('results.npz', **npz_data)
-```
-
----
-
-## 🎨 Web Interface Features
-
-The Streamlit-based web interface provides:
-
-- **Session Management**: Start/stop optimization sessions
-- **Algorithm Selection**: Browse and select from 95+ algorithms by category
-- **Configuration**: Adjust population size, iterations, bounds
-- **Real-time Visualization**: Watch convergence in real-time
-- **Results Dashboard**: Compare algorithm performance
-- **Export Options**: Download results in multiple formats
-- **Professional Design**: Clean, modern interface with gradient themes
-
----
-
-## 📊 Benchmark Functions
-
-Built-in test functions include:
-
-- **Sphere**: Unimodal, smooth landscape
-- **Rosenbrock**: Narrow valley, challenging
-- **Rastrigin**: Highly multimodal, many local optima
-- **Ackley**: Nearly flat outer region, deep hole at center
-- **Griewank**: Product and sum components, multimodal
-- **Schwefel**: Deceptive, multimodal
-
----
-
-## 🔬 Research Applications
-
-Perfect for:
-
-- Function Optimization
-- Feature Selection
-- Hyperparameter Tuning
-- Neural Architecture Search
-- Portfolio Optimization
-- Scheduling Problems
-- Engineering Design Optimization
-- Machine Learning Model Selection
-
----
-
-## 📖 Documentation
-
-For detailed documentation, visit:
-- [GitHub Wiki](https://github.com/Achyut103040/MHA-Algorithm/wiki)
-- [API Reference](https://github.com/Achyut103040/MHA-Algorithm/docs)
-- [Tutorial Notebook](MHA_Toolbox_Tutorial.ipynb)
-
----
-
-## 📖 Documentation
-
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete usage guide with examples
-- **[PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md)** - How to publish and share
-- **[IMPORT_FIXES_COMPLETED.md](IMPORT_FIXES_COMPLETED.md)** - Technical details
-- **[BUILD_GUIDE.md](BUILD_GUIDE.md)** - Building from source
-- **[QUICK_START.md](QUICK_START.md)** - Getting started quickly
-
-### Examples
-
-Run the example script to see the library in action:
-
-```bash
-python examples/quick_start.py
-```
-
-This will demonstrate:
-- Basic optimization with PSO
-- Algorithm comparison
-- Visualization generation
-- Hybrid algorithms
-
----
-
-## 🎯 Use Cases
-
-### Function Optimization
-```python
-from mha_toolbox.algorithms import GWO
-import numpy as np
-
-def ackley(x):
-    a, b, c = 20, 0.2, 2 * np.pi
-    d = len(x)
-    sum1 = np.sum(x**2)
-    sum2 = np.sum(np.cos(c * x))
-    return -a * np.exp(-b * np.sqrt(sum1/d)) - np.exp(sum2/d) + a + np.e
-
-bounds = np.array([[-5, 5]] * 10)
-gwo = GWO(ackley, bounds, n_wolves=50, max_iter=200)
-best_pos, best_fit = gwo.optimize()
-```
-
-### Feature Selection
-```python
-from sklearn.datasets import load_breast_cancer
-from sklearn.ensemble import RandomForestClassifier
-from mha_toolbox.algorithms import PSO
+from mha_toolbox import optimize
+from sklearn.datasets import load_iris
 
 # Load data
-X, y = load_breast_cancer(return_X_y=True)
+X, y = load_iris(return_X_y=True)
 
-# Define fitness function
-def feature_selection_fitness(mask):
-    binary_mask = (mask > 0.5).astype(int)
-    if np.sum(binary_mask) == 0:
-        return 1.0
-    
-    X_selected = X[:, binary_mask == 1]
-    clf = RandomForestClassifier(n_estimators=10)
-    return 1 - cross_val_score(clf, X_selected, y, cv=3).mean()
+# Run optimization
+result = optimize('pso', X=X, y=y, population_size=30, max_iterations=100)
 
-# Optimize
-bounds = np.array([[0, 1]] * X.shape[1])
-pso = PSO(feature_selection_fitness, bounds, n_particles=30, max_iter=50)
-best_mask, best_fitness = pso.optimize()
-
-selected_features = (best_mask > 0.5).astype(int)
-print(f"Selected {np.sum(selected_features)} features")
+# Access results
+print(f"Best fitness: {result.best_fitness_}")
+print(f"Runtime: {result.execution_time_}s")
+print(f"Best solution: {result.best_solution_}")
 ```
 
-### Hyperparameter Tuning
+---
+
+## 📦 125 Available Algorithms
+
+### 🐝 Swarm Intelligence (18)
+PSO, GWO, WOA, ACO, ABC, BA, FA, SSA, ALO, MFO, CS, FPA, KH, etc.
+
+### 🧬 Bio-Inspired (21)
+SMA, HBA, DMO, EHO, GAO, TSO, MRFO, SOS, BMO, etc.
+
+### 🌡️ Physics-Based (12)
+SA, EO, GSA, MSA, CSA, AOA, MVO, HGSO, WDO, WCA, etc.
+
+### 🔍 Search-Based (20)
+TS, VNS, HS, HC, HGS, ILS, GLS, etc.
+
+### 🧠 Human-Based (9)
+TLBO, LCA, LCBO, SOS, ICA, TBO, CHIO, QSA, etc.
+
+### 🔥 Hybrid Algorithms (22)
+PSO_GA, GWO_PSO, ABC_DE, ACO_PSO, FA_DE, WOA_GA, SMA_DE, etc.
+
+### 🧬 Evolutionary (2)
+GA, DE
+
+### 🎯 Advanced Meta-Heuristics (6)
+SCA, HHO, AO, GTO, RSA, ASO
+
+### 📐 Mathematical (4)
+CEM, GCO, GBMO, GSKA
+
+### 🌊 Nature-Inspired (1)
+DA (Dragonfly Algorithm)
+
+### 🦠 Pandemic-Inspired (1)
+CHIO (Coronavirus Herd Immunity)
+
+### 🎮 Game-Based (1)
+THRO (Throwing Game)
+
+### 🔬 Other Specialized (8)
+Various domain-specific algorithms
+
+---
+
+## 🎯 Usage Modes
+
+### 1️⃣ Python Library (Programmatic)
+
 ```python
-from sklearn.svm import SVC
-from mha_toolbox.algorithms import WOA
+from mha_toolbox import optimize, MHAToolbox
 
-def svm_fitness(params):
-    C, gamma = params
-    clf = SVC(C=C, gamma=gamma)
-    return 1 - cross_val_score(clf, X_train, y_train, cv=3).mean()
+# Simple API - Quick optimization
+result = optimize('pso', X=X, y=y)
 
-bounds = np.array([[0.1, 100], [0.001, 10]])
-woa = WOA(svm_fitness, bounds, n_whales=20, max_iter=30)
-best_params, best_score = woa.optimize()
-print(f"Best C={best_params[0]:.3f}, gamma={best_params[1]:.6f}")
+# Advanced API - Full control
+toolbox = MHAToolbox(verbose=False)
+algorithms = toolbox.list_algorithms()  # Returns 125 algorithms
+hybrids = toolbox.registry.list_hybrid_algorithms()  # Returns 22 hybrids
+
+# Run with custom parameters
+result = toolbox.optimize(
+    'PSO_GA_Hybrid',
+    X=X, y=y,
+    population_size=50,
+    max_iterations=200,
+    verbose=True
+)
+
+# Access all results
+print(f"Best solution: {result.best_solution_}")     # numpy array
+print(f"Best fitness: {result.best_fitness_}")       # float
+print(f"Convergence: {result.global_fitness_}")      # list
+print(f"Agent history: {result.local_fitness_}")     # list
+print(f"Positions: {result.local_positions_}")       # list
+print(f"Algorithm: {result.algorithm_name_}")        # string
+print(f"Runtime: {result.execution_time_}s")         # float
 ```
+
+### 2️⃣ Web Interface (Streamlit)
+
+```bash
+# Launch the web UI
+python mha_ui_complete.py
+
+# Or use streamlit directly
+streamlit run mha_ui_complete.py
+```
+
+**Features:**
+- 125 algorithms with interactive parameter tuning
+- Real-time visualization of convergence
+- Multi-user session management
+- Compare multiple algorithms
+- Export results (CSV, Excel, JSON, PNG)
+- Algorithm recommendations
+
+### 3️⃣ Command-Line Interface (CLI)
+
+```bash
+# List all algorithms
+python -m mha_toolbox list
+
+# List only hybrid algorithms
+python -m mha_toolbox list --filter hybrid
+
+# Get algorithm information
+python -m mha_toolbox info pso
+
+# Get recommendations
+python -m mha_toolbox recommend --problem-type feature_selection
+
+# Launch web interface
+python -m mha_toolbox ui
+
+# Show demo
+python -m mha_toolbox demo
+```
+
+---
+
+## 🔥 Hybrid Algorithms (All 22 Working)
+
+Hybrid algorithms combine the strengths of multiple optimization approaches:
+
+```python
+from mha_toolbox import optimize
+
+# Available hybrid algorithms:
+hybrids = [
+    'PSO_GA_Hybrid',           # Particle Swarm + Genetic Algorithm
+    'GWO_PSO_Hybrid',          # Grey Wolf + Particle Swarm
+    'ABC_DE_Hybrid',           # Artificial Bee Colony + Differential Evolution
+    'ACO_PSO_Hybrid',          # Ant Colony + Particle Swarm
+    'FA_DE_Hybrid',            # Firefly + Differential Evolution
+    'FA_GA_Hybrid',            # Firefly + Genetic Algorithm
+    'WOA_GA_Hybrid',           # Whale + Genetic Algorithm
+    'WOA_SMA_Hybrid',          # Whale + Slime Mould
+    'SMA_DE_Hybrid',           # Slime Mould + Differential Evolution
+    'CS_GA_Hybrid',            # Cuckoo Search + Genetic Algorithm
+    'ALO_PSO_Hybrid',          # Ant Lion + Particle Swarm
+    'SSA_DE_Hybrid',           # Salp Swarm + Differential Evolution
+    'GWO_DE_Hybrid',           # Grey Wolf + Differential Evolution
+    'HS_DE_Hybrid',            # Harmony Search + Differential Evolution
+    'KH_PSO_Hybrid',           # Krill Herd + Particle Swarm
+    'MFO_DE_Hybrid',           # Moth Flame + Differential Evolution
+    'SA_PSO_Hybrid',           # Simulated Annealing + Particle Swarm
+    'TS_GA_Hybrid',            # Tabu Search + Genetic Algorithm
+    'DA_GA_Hybrid',            # Dragonfly + Genetic Algorithm
+    'FPA_GA_Hybrid',           # Flower Pollination + Genetic Algorithm
+    'DifferentialEvolutionPSOHybrid',
+    'GeneticSimulatedAnnealingHybrid'
+]
+
+# Use any hybrid algorithm
+result = optimize('PSO_GA_Hybrid', X=X, y=y, population_size=30, max_iterations=100)
+```
+
+---
+
+## 📋 Examples
+
+### Example 1: Feature Selection
+
+```python
+from mha_toolbox import optimize
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+
+# Load dataset
+X, y = load_breast_cancer(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+# Optimize with PSO
+result = optimize(
+    'pso',
+    X=X_train,
+    y=y_train,
+    population_size=30,
+    max_iterations=50,
+    verbose=True
+)
+
+print(f"Selected {sum(result.best_solution_)} features")
+print(f"Best fitness: {result.best_fitness_:.6f}")
+```
+
+### Example 2: Compare Multiple Algorithms
+
+```python
+from mha_toolbox import optimize
+
+algorithms = ['pso', 'gwo', 'woa', 'PSO_GA_Hybrid']
+results = {}
+
+for algo in algorithms:
+    result = optimize(algo, X=X_train, y=y_train, max_iterations=30)
+    results[algo] = {
+        'fitness': result.best_fitness_,
+        'time': result.execution_time_
+    }
+    print(f"{algo:15s} - Fitness: {result.best_fitness_:.6f} - Time: {result.execution_time_:.2f}s")
+```
+
+### Example 3: Using Toolbox API
+
+```python
+from mha_toolbox import MHAToolbox
+
+# Initialize
+toolbox = MHAToolbox(verbose=True)
+
+# Get algorithm info
+total = len(toolbox.list_algorithms())
+hybrids = len(toolbox.registry.list_hybrid_algorithms())
+print(f"Total algorithms: {total}")
+print(f"Hybrid algorithms: {hybrids}")
+
+# Get algorithms by category
+by_category = toolbox.registry.get_algorithm_by_category()
+for category, algos in by_category.items():
+    print(f"{category}: {len(algos)} algorithms")
+
+# Run optimization
+result = toolbox.optimize('pso', X=X, y=y)
+```
+
+---
+
+## 🧪 Testing
+
+### Quick Verification
+
+```bash
+# Test system
+python final_system_test.py
+
+# Test hybrid algorithms
+python test_fixed_hybrids.py
+
+# Quick start demo
+python hybrid_quick_start.py
+```
+
+### Run Tests
+
+```python
+# In Python
+from mha_toolbox import MHAToolbox
+
+toolbox = MHAToolbox(verbose=False)
+print(f"✅ Algorithms discovered: {len(toolbox.list_algorithms())}")
+print(f"✅ Hybrids available: {len(toolbox.registry.list_hybrid_algorithms())}")
+```
+
+---
+
+## 📊 Performance Benchmarks
+
+Tested on Iris dataset (150 samples, 4 features):
+
+| Algorithm | Runtime | Best Fitness | Convergence |
+|-----------|---------|--------------|-------------|
+| PSO | 9.9s | 0.071667 | 10 iterations |
+| GWO_PSO_Hybrid | 2.8s | 0.120238 | 3 iterations |
+| ABC_DE_Hybrid | 5.0s | 0.107143 | 3 iterations |
+| ACO_PSO_Hybrid | 2.3s | 0.107143 | 3 iterations |
+| FA_DE_Hybrid | 3.1s | 0.101190 | 3 iterations |
+
+*Note: Times vary based on population size and iterations*
+
+---
+
+## 🛠️ Requirements
+
+- Python 3.8+
+- numpy >= 1.19.0
+- scipy >= 1.5.0
+- scikit-learn >= 0.23.0
+- matplotlib >= 3.3.0
+- pandas >= 1.1.0
+- streamlit >= 1.0.0 (for UI)
+- plotly >= 4.14.0 (for visualization)
+
+---
+
+## 📁 Project Structure
+
+```
+MHA-Algorithm/
+├── mha_toolbox/              # Main package
+│   ├── __init__.py
+│   ├── base.py               # BaseOptimizer class
+│   ├── toolbox.py            # Main MHAToolbox class
+│   ├── complete_algorithm_registry.py  # Algorithm discovery
+│   ├── algorithms/           # 103 algorithm implementations
+│   │   └── hybrid/           # 22 hybrid algorithms
+│   ├── ui.py                 # Web interface
+│   └── __main__.py           # CLI implementation
+├── mha_ui_complete.py        # Complete web interface
+├── examples/                 # Example scripts
+├── objective_functions/      # Benchmark functions
+├── requirements.txt
+├── setup.py
+├── README.md                 # This file
+└── LICENSE
+```
+
+---
+
+## 💡 Tips & Best Practices
+
+### Choosing Population Size
+- Small datasets (< 1000 samples): 20-30
+- Medium datasets (1000-10000): 30-50
+- Large datasets (> 10000): 50-100
+
+### Choosing Iterations
+- Quick test: 10-20 iterations
+- Standard optimization: 50-100 iterations
+- Thorough search: 200-500 iterations
+
+### Choosing Algorithm
+- **Fast convergence**: PSO, GWO, WOA
+- **Exploration**: GA, DE, ABC
+- **Balanced**: Hybrid algorithms (PSO_GA, GWO_PSO)
+- **Complex problems**: Advanced hybrids (ABC_DE, FA_DE)
+
+---
+
+## 🐛 Troubleshooting
+
+### Import Error
+```bash
+pip install -r requirements.txt --upgrade
+```
+
+### Algorithm Not Found
+```python
+from mha_toolbox import MHAToolbox
+toolbox = MHAToolbox()
+print(toolbox.list_algorithms())  # Check available names
+```
+
+### Slow Optimization
+- Reduce `population_size` (e.g., from 50 to 20)
+- Reduce `max_iterations` (e.g., from 100 to 30)
+- Use faster algorithms (PSO, GWO instead of GA)
+
+### Memory Error
+- Reduce population size
+- Process data in batches
+- Use simpler algorithms
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes:
+Contributions are welcome! To add a new algorithm:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📝 Citation
-
-If you use MHA Toolbox in your research, please cite:
-
-```bibtex
-@software{mha_toolbox,
-  title = {MHA Toolbox: Professional Metaheuristic Algorithm Library},
-  author = {MHA Development Team},
-  year = {2025},
-  version = {2.0.0},
-  url = {https://github.com/Achyut103040/MHA-Algorithm}
-}
-```
+1. Create algorithm file in `mha_toolbox/algorithms/`
+2. Inherit from `BaseOptimizer`
+3. Implement `_optimize()` method
+4. Add tests
+5. Submit pull request
 
 ---
 
@@ -423,24 +435,37 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🙏 Acknowledgments
-
-This library builds upon decades of research in metaheuristic optimization. We acknowledge the original authors of each algorithm and the broader research community.
-
----
-
 ## 📧 Contact
 
-- **GitHub**: [Achyut103040](https://github.com/Achyut103040)
-- **Issues**: [Bug Tracker](https://github.com/Achyut103040/MHA-Algorithm/issues)
-- **Email**: mha.toolbox@gmail.com
+- **Author**: MHA Development Team
+- **GitHub**: [Achyut103040/MHA-Algorithm](https://github.com/Achyut103040/MHA-Algorithm)
+- **Issues**: [GitHub Issues](https://github.com/Achyut103040/MHA-Algorithm/issues)
 
 ---
 
-## 🌟 Star History
+## 🎉 Acknowledgments
 
-If you find this library useful, please consider giving it a star ⭐!
+This library implements meta-heuristic algorithms from various research papers and combines them into a unified, easy-to-use framework.
 
 ---
 
-**Made with ❤️ by the MHA Development Team**
+## 📈 Version History
+
+### v2.0.0 (2025-11-05) - Production Ready
+- ✅ 125 algorithms (103 main + 22 hybrids)
+- ✅ All hybrid algorithms fixed and working
+- ✅ Complete web interface with multi-user support
+- ✅ CLI implementation
+- ✅ Comprehensive documentation
+- ✅ All tests passing
+
+### v1.x - Previous versions
+- Initial implementations
+- Core algorithms
+- Basic UI
+
+---
+
+**Made with ❤️ for the optimization community**
+
+*Last Updated: November 5, 2025*

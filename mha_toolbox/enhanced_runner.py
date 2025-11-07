@@ -299,14 +299,6 @@ def run_optimization_with_tracking(mha, algorithm_name, objective_function,
             
             # Update population for next iteration
             population = new_population
-            
-            # Early stopping if convergence reached
-            if len(result.global_fitness_) > 10:
-                recent_improvement = abs(result.global_fitness_[-10] - result.global_fitness_[-1])
-                if recent_improvement < 1e-8:
-                    if show_progress:
-                        st.info(f"🎯 Converged at iteration {iteration + 1}")
-                    break
         
         # Clean up progress display
         if show_progress:

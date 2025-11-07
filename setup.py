@@ -1,5 +1,11 @@
 """
-Setup script for MHA Toolbox - Professional Metaheuristic Algorithm Library
+Setup script for MHA Toolbox - Professional Metaheuristic Algorithm Library v2.0.0
+
+Installation modes:
+    pip install mha-toolbox              # Core library only
+    pip install mha-toolbox[ui]          # With web interface
+    pip install mha-toolbox[complete]    # Everything
+    pip install mha-toolbox[dev]         # Development tools
 """
 
 from setuptools import setup, find_packages
@@ -12,69 +18,92 @@ def read_long_description():
         with open("README.md", "r", encoding="utf-8") as fh:
             return fh.read()
     except FileNotFoundError:
-        return "MHA Toolbox - Professional Metaheuristic Algorithm Library"
+        return "MHA Toolbox - Professional Metaheuristic Algorithm Library with 95+ algorithms"
 
 # Read version from __init__.py
 def get_version():
     """Extract version from __init__.py"""
-    with open("mha_toolbox/__init__.py", "r") as f:
+    with open("mha_toolbox/__init__.py", "r", encoding="utf-8") as f:
         for line in f:
             if line.startswith("__version__"):
                 return line.split("=")[1].strip().strip('"').strip("'")
-    return "1.0.0"
+    return "2.0.0"
 
-# Define requirements
+# Core dependencies (required for library usage)
 install_requires = [
-    "numpy>=1.19.0",
-    "pandas>=1.2.0",
-    "matplotlib>=3.3.0",
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "matplotlib>=3.4.0",
     "seaborn>=0.11.0",
-    "scikit-learn>=0.24.0",
-    "scipy>=1.6.0",
-    "joblib>=1.0.0",
+    "scikit-learn>=1.0.0",
+    "scipy>=1.7.0",
+    "joblib>=1.1.0",
+    "tqdm>=4.62.0",
 ]
 
-# Optional dependencies for advanced features
+# Optional dependencies for different use cases
 extras_require = {
-    "web": [
+    # Web interface dependencies
+    "ui": [
         "streamlit>=1.25.0",
         "plotly>=5.0.0",
         "dash>=2.0.0",
+        "flask>=2.0.0",
     ],
+    
+    # Jupyter notebook support
     "jupyter": [
         "jupyter>=1.0.0",
         "ipython>=7.0.0",
         "notebook>=6.0.0",
+        "ipywidgets>=7.6.0",
     ],
+    
+    # Advanced optimization features
     "advanced": [
-        "tensorflow>=2.6.0",
-        "torch>=1.9.0",
         "optuna>=2.10.0",
         "hyperopt>=0.2.5",
+        "bayesian-optimization>=1.2.0",
+        "scikit-optimize>=0.9.0",
     ],
+    
+    # Image and visualization export
+    "export": [
+        "pillow>=9.0.0",
+        "openpyxl>=3.0.0",
+        "xlsxwriter>=3.0.0",
+        "kaleido>=0.2.1",  # For plotly image export
+    ],
+    
+    # System monitoring and optimization
+    "system": [
+        "wakepy>=0.7.0",
+        "psutil>=5.8.0",
+        "memory_profiler>=0.60.0",
+    ],
+    
+    # Development tools
     "dev": [
-        "pytest>=6.0.0",
-        "pytest-cov>=2.10.0",
-        "black>=21.0.0",
-        "flake8>=3.8.0",
+        "pytest>=7.0.0",
+        "pytest-cov>=3.0.0",
+        "black>=22.0.0",
+        "flake8>=4.0.0",
+        "mypy>=0.950",
         "sphinx>=4.0.0",
         "sphinx-rtd-theme>=1.0.0",
     ],
-    "full": [
-        "streamlit>=1.25.0",
-        "plotly>=5.0.0",
-        "dash>=2.0.0",
-        "jupyter>=1.0.0",
-        "ipython>=7.0.0",
-        "notebook>=6.0.0",
-        "tensorflow>=2.6.0",
-        "torch>=1.9.0",
-        "optuna>=2.10.0",
-        "hyperopt>=0.2.5",
-    ]
 }
 
-# All optional dependencies
+# Complete installation (all features)
+extras_require["complete"] = list(set(
+    extras_require["ui"] + 
+    extras_require["jupyter"] + 
+    extras_require["advanced"] + 
+    extras_require["export"] + 
+    extras_require["system"]
+))
+
+# All dependencies (including dev)
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
 setup(

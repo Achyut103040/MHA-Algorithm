@@ -1,0 +1,100 @@
+# ============================================================================
+# Git Attributes for MHA-Algorithm Project
+# Ensures consistent line endings and proper file handling
+# ============================================================================
+
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# -----------------------------------------------------------------------------
+# Source Code
+# -----------------------------------------------------------------------------
+*.py text eol=lf
+*.pyx text eol=lf
+*.pxd text eol=lf
+*.pxi text eol=lf
+
+# -----------------------------------------------------------------------------
+# Configuration Files
+# -----------------------------------------------------------------------------
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# -----------------------------------------------------------------------------
+# Documentation
+# -----------------------------------------------------------------------------
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+
+# -----------------------------------------------------------------------------
+# Scripts
+# -----------------------------------------------------------------------------
+*.sh text eol=lf
+*.bash text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# -----------------------------------------------------------------------------
+# Web Files
+# -----------------------------------------------------------------------------
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# -----------------------------------------------------------------------------
+# Data Files
+# -----------------------------------------------------------------------------
+*.csv text eol=lf
+*.tsv text eol=lf
+*.xml text eol=lf
+
+# -----------------------------------------------------------------------------
+# Binary Files
+# -----------------------------------------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pickle binary
+*.pkl binary
+*.h5 binary
+*.hdf5 binary
+*.npy binary
+*.npz binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.bz2 binary
+*.7z binary
+*.rar binary
+
+# -----------------------------------------------------------------------------
+# Jupyter Notebooks
+# -----------------------------------------------------------------------------
+*.ipynb text eol=lf
+
+# -----------------------------------------------------------------------------
+# Exclude from exports
+# -----------------------------------------------------------------------------
+.gitattributes export-ignore
+.gitignore export-ignore
+.github/ export-ignore
+tests/ export-ignore
+docs/ export-ignore

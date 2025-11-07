@@ -188,10 +188,9 @@ class EnsembleHybrid(HybridStrategy):
 class AdaptiveHybrid(HybridStrategy):
     """Adaptively switch between algorithms based on performance."""
     
-    def __init__(self, switch_threshold: float = 0.1, patience: int = 20):
+    def __init__(self, switch_threshold: float = 0.1):
         super().__init__("Adaptive")
         self.switch_threshold = switch_threshold
-        self.patience = patience
     
     def combine(self, algorithms: List[str], problem, **kwargs):
         """Adaptively switch between algorithms."""
@@ -210,6 +209,7 @@ class AdaptiveHybrid(HybridStrategy):
         
         max_iterations = kwargs.get('max_iterations', 100)
         iterations_per_switch = max_iterations // (len(algorithms) * 2)
+        check_window = max(10, max_iterations // 10)  # Check improvement over 10% of iterations
         
         for iteration in range(max_iterations):
             # Run one iteration of current algorithm
@@ -219,7 +219,10 @@ class AdaptiveHybrid(HybridStrategy):
             # For demonstration, we'll run short bursts
             if iteration % iterations_per_switch == 0 and iteration > 0:
                 # Check if we should switch algorithms
-                recent_improvement = self._check_improvement(fitness_history[-self.patience:])
+                if len(fitness_history) >= check_window:
+                    recent_improvement = self._check_improvement(fitness_history[-check_window:])
+                else:
+                    recent_improvement = 0
                 
                 if recent_improvement < self.switch_threshold:
                     current_alg_idx = (current_alg_idx + 1) % len(algorithms)

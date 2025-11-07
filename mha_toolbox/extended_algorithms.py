@@ -730,6 +730,665 @@ class PSO_GA_Hybrid(BaseAlgorithm):
         return individual
 
 
+# ==================== ADDITIONAL METAHEURISTIC ALGORITHMS ====================
+
+class ArtificialFishSwarmAlgorithm(BaseAlgorithm):
+    """Artificial Fish Swarm Algorithm - Li (2002)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, visual=0.3, step=0.1, try_number=10):
+        super().__init__(population_size, max_iterations)
+        self.visual = visual
+        self.step = step
+        self.try_number = try_number
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        fish = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(f) for f in fish]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = fish[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            for i in range(self.population_size):
+                # Prey behavior
+                best_local_idx = self._find_neighbors(fish, i, fitness)
+                if fitness[best_local_idx] < fitness[i]:
+                    direction = fish[best_local_idx] - fish[i]
+                    fish[i] = fish[i] + self.step * direction / (np.linalg.norm(direction) + 1e-10) * np.random.rand()
+                else:
+                    # Random move
+                    fish[i] = fish[i] + self.step * np.random.uniform(-1, 1, dimensions)
+                
+                fish[i] = self.clip_solution(fish[i], bounds)
+                fitness[i] = objective_func(fish[i])
+                
+                if fitness[i] < best_fitness:
+                    best_solution = fish[i].copy()
+                    best_fitness = fitness[i]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'AFSA'
+        }
+    
+    def _find_neighbors(self, fish, idx, fitness):
+        neighbors = []
+        for j in range(len(fish)):
+            if j != idx and np.linalg.norm(fish[j] - fish[idx]) < self.visual:
+                neighbors.append(j)
+        if neighbors:
+            return min(neighbors, key=lambda x: fitness[x])
+        return idx
+
+
+class BacterialForagingOptimization(BaseAlgorithm):
+    """Bacterial Foraging Optimization - Passino (2002)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, Nc=4, Ns=4, Nre=4, Ned=2, C=0.1):
+        super().__init__(population_size, max_iterations)
+        self.Nc = Nc  # Chemotactic steps
+        self.Ns = Ns  # Swim length
+        self.Nre = Nre  # Reproduction steps
+        self.Ned = Ned  # Elimination-dispersal steps
+        self.C = C  # Step size
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        bacteria = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(b) for b in bacteria]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = bacteria[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Chemotaxis
+            for i in range(self.population_size):
+                # Tumble: random direction
+                delta = np.random.randn(dimensions)
+                delta = delta / (np.linalg.norm(delta) + 1e-10)
+                
+                # Move
+                bacteria[i] = bacteria[i] + self.C * delta
+                bacteria[i] = self.clip_solution(bacteria[i], bounds)
+                
+                new_fitness = objective_func(bacteria[i])
+                
+                # Swim if improving
+                if new_fitness < fitness[i]:
+                    for _ in range(self.Ns):
+                        bacteria[i] = bacteria[i] + self.C * delta
+                        bacteria[i] = self.clip_solution(bacteria[i], bounds)
+                        swim_fitness = objective_func(bacteria[i])
+                        if swim_fitness < new_fitness:
+                            new_fitness = swim_fitness
+                        else:
+                            break
+                
+                fitness[i] = new_fitness
+                
+                if fitness[i] < best_fitness:
+                    best_solution = bacteria[i].copy()
+                    best_fitness = fitness[i]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'BFO'
+        }
+
+
+class ShuffledFrogLeapingAlgorithm(BaseAlgorithm):
+    """Shuffled Frog Leaping Algorithm - Eusuff (2003)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, num_memeplexes=3):
+        super().__init__(population_size, max_iterations)
+        self.num_memeplexes = num_memeplexes
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        frogs = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(f) for f in frogs]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = frogs[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Sort frogs by fitness
+            sorted_indices = np.argsort(fitness)
+            frogs = [frogs[i] for i in sorted_indices]
+            fitness = [fitness[i] for i in sorted_indices]
+            
+            # Partition into memeplexes
+            memeplex_size = self.population_size // self.num_memeplexes
+            
+            for m in range(self.num_memeplexes):
+                start_idx = m * memeplex_size
+                end_idx = start_idx + memeplex_size
+                memeplex = frogs[start_idx:end_idx]
+                memeplex_fitness = fitness[start_idx:end_idx]
+                
+                worst_idx = np.argmax(memeplex_fitness)
+                best_idx_local = np.argmin(memeplex_fitness)
+                
+                # Update worst frog
+                new_frog = memeplex[worst_idx] + np.random.rand() * (memeplex[best_idx_local] - memeplex[worst_idx])
+                new_frog = self.clip_solution(new_frog, bounds)
+                new_fitness = objective_func(new_frog)
+                
+                if new_fitness < memeplex_fitness[worst_idx]:
+                    memeplex[worst_idx] = new_frog
+                    memeplex_fitness[worst_idx] = new_fitness
+                else:
+                    # Try global best
+                    new_frog = memeplex[worst_idx] + np.random.rand() * (best_solution - memeplex[worst_idx])
+                    new_frog = self.clip_solution(new_frog, bounds)
+                    new_fitness = objective_func(new_frog)
+                    
+                    if new_fitness < memeplex_fitness[worst_idx]:
+                        memeplex[worst_idx] = new_frog
+                        memeplex_fitness[worst_idx] = new_fitness
+                
+                # Update main population
+                frogs[start_idx:end_idx] = memeplex
+                fitness[start_idx:end_idx] = memeplex_fitness
+            
+            best_idx = np.argmin(fitness)
+            if fitness[best_idx] < best_fitness:
+                best_solution = frogs[best_idx].copy()
+                best_fitness = fitness[best_idx]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'SFLA'
+        }
+
+
+class GroupSearchOptimizer(BaseAlgorithm):
+    """Group Search Optimizer - He (2009)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, producer_ratio=0.2, scrounger_ratio=0.6):
+        super().__init__(population_size, max_iterations)
+        self.producer_ratio = producer_ratio
+        self.scrounger_ratio = scrounger_ratio
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        animals = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(a) for a in animals]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = animals[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        num_producers = max(1, int(self.population_size * self.producer_ratio))
+        num_scroungers = int(self.population_size * self.scrounger_ratio)
+        
+        for iteration in range(self.max_iterations):
+            # Producer behavior (best individuals)
+            sorted_indices = np.argsort(fitness)
+            
+            for i in range(num_producers):
+                idx = sorted_indices[i]
+                # Scan for better position
+                direction = np.random.randn(dimensions)
+                direction = direction / (np.linalg.norm(direction) + 1e-10)
+                
+                step_size = 0.1 * (bounds[1] - bounds[0])
+                new_animal = animals[idx] + step_size * direction
+                new_animal = self.clip_solution(new_animal, bounds)
+                new_fitness = objective_func(new_animal)
+                
+                if new_fitness < fitness[idx]:
+                    animals[idx] = new_animal
+                    fitness[idx] = new_fitness
+            
+            # Scrounger behavior (follow best)
+            for i in range(num_scroungers):
+                idx = sorted_indices[num_producers + i]
+                animals[idx] = animals[idx] + np.random.rand() * (best_solution - animals[idx])
+                animals[idx] = self.clip_solution(animals[idx], bounds)
+                fitness[idx] = objective_func(animals[idx])
+            
+            # Ranger behavior (random walk)
+            for i in range(num_producers + num_scroungers, self.population_size):
+                animals[i] = self.create_random_solution(bounds, dimensions)
+                fitness[i] = objective_func(animals[i])
+            
+            best_idx = np.argmin(fitness)
+            if fitness[best_idx] < best_fitness:
+                best_solution = animals[best_idx].copy()
+                best_fitness = fitness[best_idx]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'GSO'
+        }
+
+
+class InvasiveWeedOptimization(BaseAlgorithm):
+    """Invasive Weed Optimization - Mehrabian (2006)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, max_pop=50, Smax=5, Smin=0):
+        super().__init__(population_size, max_iterations)
+        self.max_pop = max_pop
+        self.Smax = Smax
+        self.Smin = Smin
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        weeds = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(w) for w in weeds]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = weeds[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Calculate number of seeds for each weed
+            worst_fitness = max(fitness)
+            best_fitness_iter = min(fitness)
+            
+            for i in range(len(weeds)):
+                if worst_fitness != best_fitness_iter:
+                    ratio = (fitness[i] - worst_fitness) / (best_fitness_iter - worst_fitness)
+                else:
+                    ratio = 0.5
+                
+                # Better weeds produce more seeds
+                num_seeds = int(self.Smin + (self.Smax - self.Smin) * (1 - ratio))
+                
+                # Standard deviation decreases over iterations
+                sigma = ((self.max_iterations - iteration) / self.max_iterations) ** 3 * (bounds[1] - bounds[0])
+                
+                # Produce seeds
+                for _ in range(num_seeds):
+                    seed = weeds[i] + np.random.normal(0, sigma, dimensions)
+                    seed = self.clip_solution(seed, bounds)
+                    seed_fitness = objective_func(seed)
+                    
+                    weeds.append(seed)
+                    fitness.append(seed_fitness)
+                    
+                    if seed_fitness < best_fitness:
+                        best_solution = seed.copy()
+                        best_fitness = seed_fitness
+            
+            # Competitive exclusion: keep best max_pop weeds
+            if len(weeds) > self.max_pop:
+                sorted_indices = np.argsort(fitness)
+                weeds = [weeds[i] for i in sorted_indices[:self.max_pop]]
+                fitness = [fitness[i] for i in sorted_indices[:self.max_pop]]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'IWO'
+        }
+
+
+class ChargedSystemSearch(BaseAlgorithm):
+    """Charged System Search - Kaveh (2010)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, ka=0.5, kv=0.5, kc=0.5):
+        super().__init__(population_size, max_iterations)
+        self.ka = ka
+        self.kv = kv
+        self.kc = kc
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        charged_particles = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        velocities = [np.zeros(dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(cp) for cp in charged_particles]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = charged_particles[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Calculate charges
+            worst_fitness = max(fitness)
+            best_fitness_iter = min(fitness)
+            
+            charges = []
+            for f in fitness:
+                if worst_fitness != best_fitness_iter:
+                    charge = (f - worst_fitness) / (best_fitness_iter - worst_fitness)
+                else:
+                    charge = 1
+                charges.append(charge)
+            
+            # Calculate forces and move particles
+            for i in range(self.population_size):
+                force = np.zeros(dimensions)
+                
+                for j in range(self.population_size):
+                    if i != j:
+                        r = np.linalg.norm(charged_particles[j] - charged_particles[i]) + 1e-10
+                        
+                        if fitness[j] < fitness[i]:
+                            force += (charges[j] / (r ** 2)) * (charged_particles[j] - charged_particles[i])
+                        else:
+                            force += (charges[j] / (r ** 2)) * (charged_particles[i] - charged_particles[j])
+                
+                acceleration = force * self.ka
+                velocities[i] = self.kv * velocities[i] + acceleration
+                charged_particles[i] = charged_particles[i] + velocities[i]
+                charged_particles[i] = self.clip_solution(charged_particles[i], bounds)
+                
+                fitness[i] = objective_func(charged_particles[i])
+                
+                if fitness[i] < best_fitness:
+                    best_solution = charged_particles[i].copy()
+                    best_fitness = fitness[i]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'CSS'
+        }
+
+
+class BlackHoleAlgorithm(BaseAlgorithm):
+    """Black Hole Algorithm - Hatamlou (2013)"""
+    
+    def __init__(self, population_size=30, max_iterations=100):
+        super().__init__(population_size, max_iterations)
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        stars = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(s) for s in stars]
+        
+        best_idx = np.argmin(fitness)
+        black_hole = stars[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Calculate event horizon radius
+            total_fitness = sum(fitness)
+            event_horizon = best_fitness / total_fitness if total_fitness > 0 else 0.01
+            
+            # Move stars towards black hole
+            for i in range(self.population_size):
+                if i != best_idx:
+                    stars[i] = stars[i] + np.random.rand() * (black_hole - stars[i])
+                    stars[i] = self.clip_solution(stars[i], bounds)
+                    
+                    fitness[i] = objective_func(stars[i])
+                    
+                    # Replace star if crosses event horizon
+                    if np.linalg.norm(stars[i] - black_hole) < event_horizon:
+                        stars[i] = self.create_random_solution(bounds, dimensions)
+                        fitness[i] = objective_func(stars[i])
+                    
+                    if fitness[i] < best_fitness:
+                        black_hole = stars[i].copy()
+                        best_fitness = fitness[i]
+                        best_idx = i
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': black_hole,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'BH'
+        }
+
+
+class BigBangBigCrunchAlgorithm(BaseAlgorithm):
+    """Big Bang-Big Crunch Algorithm - Erol (2006)"""
+    
+    def __init__(self, population_size=30, max_iterations=100):
+        super().__init__(population_size, max_iterations)
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        best_solution = None
+        best_fitness = float('inf')
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Big Bang: Generate random candidates
+            candidates = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+            fitness = [objective_func(c) for c in candidates]
+            
+            # Find best
+            current_best_idx = np.argmin(fitness)
+            if fitness[current_best_idx] < best_fitness:
+                best_solution = candidates[current_best_idx].copy()
+                best_fitness = fitness[current_best_idx]
+            
+            # Big Crunch: Calculate center of mass
+            total_fitness = sum(1.0 / (f + 1e-10) for f in fitness)
+            center_of_mass = np.zeros(dimensions)
+            
+            for i, candidate in enumerate(candidates):
+                center_of_mass += candidate * (1.0 / (fitness[i] + 1e-10))
+            
+            center_of_mass /= total_fitness
+            
+            # Prepare for next Big Bang with center of mass as reference
+            best_solution = center_of_mass.copy()
+            best_fitness = objective_func(best_solution)
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'BB-BC'
+        }
+
+
+class CentralForceOptimization(BaseAlgorithm):
+    """Central Force Optimization - Formato (2007)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, alpha=1.0, beta=1.0):
+        super().__init__(population_size, max_iterations)
+        self.alpha = alpha
+        self.beta = beta
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        probes = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(p) for p in probes]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = probes[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Move each probe
+            for i in range(self.population_size):
+                force = np.zeros(dimensions)
+                
+                # Calculate force from all other probes
+                for j in range(self.population_size):
+                    if i != j:
+                        r = np.linalg.norm(probes[j] - probes[i]) + 1e-10
+                        
+                        # Attractive force if j is better, repulsive otherwise
+                        if fitness[j] < fitness[i]:
+                            direction = probes[j] - probes[i]
+                            force += self.alpha * (fitness[i] - fitness[j]) * direction / (r ** self.beta)
+                        else:
+                            direction = probes[i] - probes[j]
+                            force += self.alpha * (fitness[j] - fitness[i]) * direction / (r ** self.beta)
+                
+                # Move probe
+                step_size = 0.1 * (bounds[1] - bounds[0]) / (iteration + 1)
+                probes[i] = probes[i] + step_size * force / (np.linalg.norm(force) + 1e-10)
+                probes[i] = self.clip_solution(probes[i], bounds)
+                
+                fitness[i] = objective_func(probes[i])
+                
+                if fitness[i] < best_fitness:
+                    best_solution = probes[i].copy()
+                    best_fitness = fitness[i]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'CFO'
+        }
+
+
+class FireworkAlgorithm(BaseAlgorithm):
+    """Firework Algorithm - Tan (2010)"""
+    
+    def __init__(self, population_size=30, max_iterations=100, m=50, a=0.04, b=0.8):
+        super().__init__(population_size, max_iterations)
+        self.m = m  # Max sparks
+        self.a = a
+        self.b = b
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        fireworks = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(fw) for fw in fireworks]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = fireworks[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            all_sparks = []
+            all_fitness = []
+            
+            # Generate sparks for each firework
+            worst_fitness = max(fitness)
+            
+            for i in range(self.population_size):
+                # Number of sparks
+                if worst_fitness != min(fitness):
+                    Si = int(self.m * (worst_fitness - fitness[i]) / (sum(worst_fitness - f for f in fitness) + 1e-10))
+                else:
+                    Si = int(self.m / self.population_size)
+                
+                Si = max(1, min(Si, self.m))
+                
+                # Explosion amplitude
+                Ai = self.a * (bounds[1] - bounds[0]) * (fitness[i] - min(fitness)) / (sum(f - min(fitness) for f in fitness) + 1e-10)
+                
+                # Generate sparks
+                for _ in range(Si):
+                    spark = fireworks[i].copy()
+                    num_dimensions = random.randint(1, dimensions)
+                    dimensions_to_modify = random.sample(range(dimensions), num_dimensions)
+                    
+                    for d in dimensions_to_modify:
+                        spark[d] += Ai * np.random.uniform(-1, 1)
+                    
+                    spark = self.clip_solution(spark, bounds)
+                    spark_fitness = objective_func(spark)
+                    
+                    all_sparks.append(spark)
+                    all_fitness.append(spark_fitness)
+                    
+                    if spark_fitness < best_fitness:
+                        best_solution = spark.copy()
+                        best_fitness = spark_fitness
+            
+            # Select next generation
+            combined = list(zip(fireworks + all_sparks, fitness + all_fitness))
+            combined.sort(key=lambda x: x[1])
+            fireworks = [c[0] for c in combined[:self.population_size]]
+            fitness = [c[1] for c in combined[:self.population_size]]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'FWA'
+        }
+
+
+class LightningSearchAlgorithm(BaseAlgorithm):
+    """Lightning Search Algorithm - Shareef (2015)"""
+    
+    def __init__(self, population_size=30, max_iterations=100):
+        super().__init__(population_size, max_iterations)
+    
+    def optimize(self, objective_func, bounds, dimensions):
+        projectiles = [self.create_random_solution(bounds, dimensions) for _ in range(self.population_size)]
+        fitness = [objective_func(p) for p in projectiles]
+        
+        best_idx = np.argmin(fitness)
+        best_solution = projectiles[best_idx].copy()
+        best_fitness = fitness[best_idx]
+        convergence_curve = []
+        
+        for iteration in range(self.max_iterations):
+            # Stepped leader phase
+            for i in range(self.population_size):
+                # Create space leaders
+                num_leaders = 3
+                for _ in range(num_leaders):
+                    step = 0.1 * (bounds[1] - bounds[0]) * np.random.randn(dimensions)
+                    leader = projectiles[i] + step
+                    leader = self.clip_solution(leader, bounds)
+                    leader_fitness = objective_func(leader)
+                    
+                    if leader_fitness < fitness[i]:
+                        projectiles[i] = leader
+                        fitness[i] = leader_fitness
+                        
+                        if fitness[i] < best_fitness:
+                            best_solution = projectiles[i].copy()
+                            best_fitness = fitness[i]
+            
+            # Space leader propagation
+            for i in range(self.population_size):
+                projectiles[i] = projectiles[i] + np.random.rand() * (best_solution - projectiles[i])
+                projectiles[i] = self.clip_solution(projectiles[i], bounds)
+                fitness[i] = objective_func(projectiles[i])
+                
+                if fitness[i] < best_fitness:
+                    best_solution = projectiles[i].copy()
+                    best_fitness = fitness[i]
+            
+            convergence_curve.append(best_fitness)
+        
+        return {
+            'best_solution': best_solution,
+            'best_fitness': best_fitness,
+            'convergence_curve': convergence_curve,
+            'algorithm_name': 'LSA'
+        }
+
+
 # Algorithm collection dictionary for easy access
 ALGORITHM_COLLECTION = {
     # Swarm Intelligence

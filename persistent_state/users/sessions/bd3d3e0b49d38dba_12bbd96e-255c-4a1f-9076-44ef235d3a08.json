@@ -1,0 +1,67 @@
+{
+  "username": "12345",
+  "system_id": "LAPTOP-0P9VI9T2",
+  "session_id": "12bbd96e-255c-4a1f-9076-44ef235d3a08",
+  "user_id": "bd3d3e0b49d38dba",
+  "created_at": "2025-11-06T19:36:59.249958",
+  "last_active": "2025-11-06T19:39:37.169656",
+  "total_experiments": 1,
+  "total_sessions": 0,
+  "preferences": {
+    "password_hash": null,
+    "created_system": null,
+    "last_system": "LAPTOP-0P9VI9T2",
+    "system_history": [],
+    "mode": "Professional",
+    "auto_resume": true,
+    "auto_update_best": true,
+    "save_worse_results": false,
+    "theme": "light",
+    "auto_export": false,
+    "export_format": "csv",
+    "default_algorithms": [],
+    "favorite_algorithms": [],
+    "default_iterations": 100,
+    "default_population": 30,
+    "preferred_categories": [],
+    "notification_email": null,
+    "enable_notifications": false,
+    "auto_backup": true,
+    "max_stored_results": 100,
+    "total_runtime_seconds": 122.59255123138428,
+    "algorithms_used": {
+      "GWO": {
+        "count": 1,
+        "total_runtime": 32.81892371177673,
+        "avg_accuracy": 0.7135593220338983
+      },
+      "ga": {
+        "count": 1,
+        "total_runtime": 29.910314559936523,
+        "avg_accuracy": 0.7135593220338983
+      },
+      "PSO": {
+        "count": 1,
+        "total_runtime": 31.443668603897095,
+        "avg_accuracy": 0.7078154425612052
+      },
+      "WOA": {
+        "count": 1,
+        "total_runtime": 28.419644355773926,
+        "avg_accuracy": 0.7135593220338983
+      }
+    },
+    "datasets_processed": 0,
+    "best_accuracy_achieved": 0.7135593220338983,
+    "last_10_algorithms": [
+      "WOA",
+      "PSO",
+      "ga",
+      "GWO"
+    ],
+    "failed_login_attempts": 0,
+    "last_login": null,
+    "session_timeout_minutes": 60
+  },
+  "is_session_based": true
+}
