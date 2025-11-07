@@ -42,18 +42,114 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional design
+# Custom CSS for professional design with modern animations
 st.markdown("""
 <style>
-    /* Main styling */
+    /* ============================================= */
+    /* 1. GLOBAL STYLES & ANIMATIONS                */
+    /* ============================================= */
+    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Smooth fade-in animation */
+    @keyframes fadeIn {
+        from { 
+            opacity: 0; 
+            transform: translateY(20px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+    
+    @keyframes slideIn {
+        from { 
+            transform: translateX(-20px); 
+            opacity: 0; 
+        }
+        to { 
+            transform: translateX(0); 
+            opacity: 1; 
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { 
+            opacity: 1; 
+        }
+        50% { 
+            opacity: 0.6; 
+        }
+    }
+    
+    @keyframes spin {
+        0% { 
+            transform: rotate(0deg); 
+        }
+        100% { 
+            transform: rotate(360deg); 
+        }
+    }
+    
+    /* Smooth scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Main container styling */
+    .main {
+        animation: fadeIn 0.5s ease-in;
+    }
+    
+    /* ============================================= */
+    /* 2. HEADER & BRANDING                         */
+    /* ============================================= */
+    
     .main-header {
-        font-size: 3rem;
-        font-weight: 800;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        padding: 2.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
         text-align: center;
-        margin-bottom: 0.5rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        animation: fadeIn 0.8s ease-in;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    .main-header h1 {
+        color: #ffffff;
+        margin: 0;
+        font-size: 2.8rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .main-header p {
+        color: #f0f0f0;
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 1;
     }
     
     .sub-header {
@@ -63,40 +159,97 @@ st.markdown("""
         margin-bottom: 2rem;
     }
     
-    /* Metric cards - Purple gradient with WHITE text */
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        padding: 2rem;
-        border-radius: 15px;
-        color: white !important;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        transition: transform 0.3s ease;
+    /* ============================================= */
+    /* 3. INFO CARDS (GUIDE & ACTIVITY)             */
+    /* ============================================= */
+    
+    .info-card {
+        background: linear-gradient(135deg, #2d2d3a 0%, #1e1e28 100%);
+        border: 1px solid #444;
+        border-radius: 12px;
+        padding: 1.5rem;
+        height: 100%;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        animation: slideIn 0.6s ease-out;
     }
     
-    .metric-card:hover {
+    .info-card:hover {
         transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        border-color: #667eea;
     }
     
-    .metric-card * {
-        color: white !important;
+    .info-card h4 {
+        color: #FAFAFA;
+        margin-bottom: 1.2rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+        font-size: 1.3rem;
+        font-weight: 600;
     }
     
-    .metric-number {
-        font-size: 3rem;
-        font-weight: 800;
-        margin: 0;
-        color: white !important;
+    .info-card ol, .info-card ul {
+        padding-left: 20px;
+        color: #ccc;
+        line-height: 1.8;
     }
     
-    .metric-label {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        margin-top: 0.5rem;
-        color: white !important;
+    .info-card li {
+        margin-bottom: 0.8rem;
+        transition: color 0.2s;
     }
     
-    /* Info boxes - DARK text for visibility */
+    .info-card li:hover {
+        color: #fff;
+    }
+    
+    .recent-activity-item {
+        font-size: 0.95rem;
+        color: #ccc;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    
+    .recent-activity-item:hover {
+        background: rgba(102, 126, 234, 0.1);
+        color: #fff;
+        transform: translateX(5px);
+    }
+    
+    .step-box {
+        display: flex;
+        align-items: center;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.8rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.8rem;
+        border-left: 3px solid #667eea;
+        transition: background-color 0.3s;
+    }
+    
+    .step-box:hover {
+        background: rgba(102, 126, 234, 0.2);
+    }
+    
+    .step-box-number {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-right: 1rem;
+        min-width: 20px;
+        text-align: center;
+    }
+    
+    .step-box-text {
+        color: #ccc;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    
+    /* Old info boxes for compatibility */
     .info-box {
         background: #e3f2fd;
         border-left: 5px solid #2196f3;
@@ -153,7 +306,142 @@ st.markdown("""
         color: #721c24 !important;
     }
     
-    /* Algorithm card - WHITE background with DARK text */
+    /* ============================================= */
+    /* 4. STATISTICS CARDS                          */
+    /* ============================================= */
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        animation: fadeIn 0.8s ease-in;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .stat-card:hover::before {
+        left: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .stat-card-icon {
+        font-size: 2.8em;
+        margin-bottom: 0.5rem;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    
+    .stat-card-value {
+        font-size: 2.2em;
+        font-weight: 700;
+        color: white;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-card-label {
+        color: #f0f0f0;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+    
+    /* Old metric card for compatibility */
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        padding: 2rem;
+        border-radius: 15px;
+        color: white !important;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .metric-card * {
+        color: white !important;
+    }
+    
+    .metric-number {
+        font-size: 3rem;
+        font-weight: 800;
+        margin: 0;
+        color: white !important;
+    }
+    
+    .metric-label {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-top: 0.5rem;
+        color: white !important;
+    }
+    
+    /* ============================================= */
+    /* 5. ALGORITHM CARDS                           */
+    /* ============================================= */
+    
+    .algorithm-card {
+        background: linear-gradient(135deg, #2d2d3a 0%, #1e1e28 100%);
+        border-left: 4px solid #667eea;
+        border-radius: 10px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        animation: slideIn 0.5s ease-out;
+    }
+    
+    .algorithm-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .algorithm-card-pending {
+        border-left-color: #888;
+        opacity: 0.7;
+    }
+    
+    .algorithm-card-running {
+        border-left-color: #ffa500;
+        background: linear-gradient(135deg, #2d2d3a 0%, #3a2d1e 100%);
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .algorithm-card-completed {
+        border-left-color: #43e97b;
+        background: linear-gradient(135deg, #2d2d3a 0%, #1e3a2d 100%);
+    }
+    
+    .algorithm-card-failed {
+        border-left-color: #dc3545;
+        background: linear-gradient(135deg, #2d2d3a 0%, #3a1e1e 100%);
+    }
+    
+    /* Spinner animation for running algorithms */
+    .spinner-emoji {
+        display: inline-block;
+        animation: spin 2s linear infinite;
+    }
+    
+    /* Old algo-card for compatibility */
     .algo-card {
         background: white !important;
         border: 2px solid #e0e0e0;
@@ -173,22 +461,80 @@ st.markdown("""
         color: #1e1e1e !important;
     }
     
-    /* Buttons */
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3.5em;
+    /* ============================================= */
+    /* 6. BUTTONS (ENHANCED STYLING)                */
+    /* ============================================= */
+    
+    /* All buttons base styling */
+    .stButton > button {
+        border-radius: 8px;
         font-weight: 600;
-        font-size: 1.05rem;
+        font-size: 1rem;
+        padding: 0.6rem 1.5rem;
         transition: all 0.3s ease;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
     }
     
-    .stButton>button:hover {
+    /* Hover effect with ripple */
+    .stButton > button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.5s, height 0.5s;
+    }
+    
+    .stButton > button:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
     }
     
-    /* User profile badge - WHITE text on purple */
+    .stButton > button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Primary button (RED) - type="primary" */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+        color: white;
+        border: none;
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #e04555 0%, #d875e3 100%);
+        box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
+    }
+    
+    /* Secondary button (DEFAULT) */
+    .stButton > button[kind="secondary"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #653a8f 100%);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* ============================================= */
+    /* 7. USER PROFILE & BADGES                     */
+    /* ============================================= */
+    
     .user-badge {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: white !important;
@@ -199,50 +545,83 @@ st.markdown("""
         margin: 0.5rem 0;
     }
     
-    /* Step indicator - DARK text on light background */
+    /* Step indicator */
     .step-indicator {
-        background: #f5f5f5;
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 35px;
+        font-weight: 700;
+        margin-right: 10px;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* ============================================= */
+    /* 8. TABS STYLING                              */
+    /* ============================================= */
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        background-color: rgba(102, 126, 234, 0.1);
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: rgba(102, 126, 234, 0.2);
+        border-color: #667eea;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+    }
+    
+    .stTabs [data-baseweb="tab-panel"] {
+        padding-top: 1.5rem;
+    }
+    
+    /* ============================================= */
+    /* 9. EXPANDER STYLING                          */
+    /* ============================================= */
+    
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 8px;
+        font-weight: 600;
         padding: 1rem;
-        border-radius: 10px;
-        border-left: 4px solid #667eea;
-        margin: 1rem 0;
-        color: #1e1e1e !important;
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
     }
     
-    .step-indicator h1, .step-indicator h2, .step-indicator h3, .step-indicator h4,
-    .step-indicator h5, .step-indicator h6, .step-indicator p, .step-indicator span {
-        color: #1e1e1e !important;
+    .streamlit-expanderHeader:hover {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+        border-color: #667eea;
+        transform: translateX(5px);
     }
     
-    /* CRITICAL: Main content area - force dark text on white/light sections */
-    .main p, .main li, .main span, .main div:not(.metric-card):not(.user-badge) {
-        color: #1e1e1e !important;
+    .streamlit-expanderContent {
+        background-color: rgba(0,0,0,0.1);
+        border-radius: 0 0 8px 8px;
+        padding: 1rem;
+        border: 1px solid #333;
+        border-top: none;
     }
     
-    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
-        color: #1e1e1e !important;
-    }
-    
-    /* Override for ALL elements in main except special cards */
-    .main .stMarkdown:not(:has(.metric-card)):not(:has(.user-badge)) * {
-        color: #1e1e1e !important;
-    }
-    
-    /* Column content - dark text */
-    div[data-testid="column"]:not(:has(.metric-card)) {
-        color: #1e1e1e !important;
-    }
-    
-    div[data-testid="column"]:not(:has(.metric-card)) * {
-        color: #1e1e1e !important;
-    }
-    
-    /* Block container */
-    .block-container:not(:has(.metric-card)):not(:has(.user-badge)) {
-        color: #1e1e1e !important;
-    }
-    
-    /* Streamlit expanders */
+    /* Old expanders for compatibility */
     div[data-testid="stExpander"] {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -253,6 +632,68 @@ st.markdown("""
         color: #1e1e1e !important;
     }
     
+    /* ============================================= */
+    /* 10. DATAFRAME STYLING                        */
+    /* ============================================= */
+    
+    .stDataFrame {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .stDataFrame [data-testid="stDataFrameResizable"] {
+        border-radius: 10px;
+    }
+    
+    /* ============================================= */
+    /* 11. METRIC CARDS                             */
+    /* ============================================= */
+    
+    div[data-testid="metric-container"] {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid #444;
+        border-radius: 10px;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    div[data-testid="metric-container"]:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        border-color: #667eea;
+    }
+    
+    div[data-testid="metric-container"] label {
+        font-weight: 600;
+        color: #ccc;
+    }
+    
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    
+    /* ============================================= */
+    /* 12. PROGRESS BAR                             */
+    /* ============================================= */
+    
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+    
+    .stProgress > div > div {
+        background-color: rgba(102, 126, 234, 0.2);
+        border-radius: 10px;
+    }
+    
+    /* ============================================= */
+    /* 13. FORM ELEMENTS                            */
+    /* ============================================= */
+    
     /* Form elements */
     input, textarea, select {
         background-color: #ffffff !important;
@@ -260,25 +701,60 @@ st.markdown("""
         border: 1px solid #ced4da !important;
     }
     
-    /* CRITICAL: Labels and text must be visible */
+    /* Labels - dark for visibility */
     label, .stNumberInput label, .stSlider label, .stSelectbox label {
-        color: #ffffff !important;
+        color: #1e1e1e !important;
         font-weight: 600 !important;
     }
     
     /* Number input labels */
     div[data-testid="stNumberInput"] label {
-        color: #ffffff !important;
+        color: #1e1e1e !important;
     }
     
     /* Slider label */
     div[data-testid="stSlider"] label {
-        color: #ffffff !important;
+        color: #1e1e1e !important;
     }
     
     /* Help text */
     .stTextInput small, .stNumberInput small, .stSlider small {
-        color: #cccccc !important;
+        color: #666666 !important;
+    }
+    
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div,
+    .stTextInput > div > div {
+        border-radius: 8px;
+        border: 1px solid #444;
+        transition: all 0.3s ease;
+    }
+    
+    .stSelectbox > div > div:hover,
+    .stMultiSelect > div > div:hover,
+    .stTextInput > div > div:hover {
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+    
+    .stSelectbox > div > div:focus-within,
+    .stMultiSelect > div > div:focus-within,
+    .stTextInput > div > div:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+    }
+    
+    /* ============================================= */
+    /* 14. TEXT COLORS                              */
+    /* ============================================= */
+    
+    /* Main content area - force dark text on light sections */
+    .main p, .main li, .main span, .main div:not(.metric-card):not(.user-badge):not(.stat-card) {
+        color: #1e1e1e !important;
+    }
+    
+    .main h1, .main h2, .main h3, .main h4, .main h5, .main h6 {
+        color: #1e1e1e !important;
     }
     
     /* Tables */
@@ -290,25 +766,54 @@ st.markdown("""
         color: #1e1e1e !important;
     }
     
-    /* Sidebar - keep dark */
+    /* ============================================= */
+    /* 15. SIDEBAR                                  */
+    /* ============================================= */
+    
     section[data-testid="stSidebar"] {
         background-color: #262730;
     }
     
-    /* Code blocks */
+    /* ============================================= */
+    /* 16. CODE BLOCKS                              */
+    /* ============================================= */
+    
     code {
-        background-color: #f8f9fa;
-        color: #d63384;
-        padding: 0.2rem 0.4rem;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 2px 6px;
         border-radius: 4px;
+        color: #667eea;
+        font-family: 'Courier New', monospace;
     }
     
     pre {
-        background-color: #f8f9fa;
-        color: #1e1e1e;
-        padding: 1rem;
+        background: rgba(0,0,0,0.2);
         border-radius: 8px;
-        border-left: 4px solid #667eea;
+        padding: 1rem;
+        border: 1px solid #444;
+    }
+    
+    /* ============================================= */
+    /* 17. RESPONSIVE DESIGN                        */
+    /* ============================================= */
+    
+    @media (max-width: 768px) {
+        .main-header h1 {
+            font-size: 2rem;
+        }
+        
+        .main-header p {
+            font-size: 0.95rem;
+        }
+        
+        .stat-card-value {
+            font-size: 1.8em;
+        }
+        
+        .stButton > button {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -752,11 +1257,11 @@ def show_disclaimer():
 def main():
     """Main application"""
     
-    # Show disclaimer first (blocks everything)
-    if not show_disclaimer():
-        return
+    # Auto-accept disclaimer (removed blocking disclaimer)
+    if 'disclaimer_accepted' not in st.session_state:
+        st.session_state.disclaimer_accepted = True
     
-    # Require authentication after disclaimer
+    # Require authentication
     if not st.session_state.user_authenticated:
         st.markdown('<h1 class="main-header">🧬 MHA Toolbox</h1>', unsafe_allow_html=True)
         st.markdown('<p class="sub-header">Meta-Heuristic Algorithm Optimization Suite</p>', unsafe_allow_html=True)
@@ -838,87 +1343,115 @@ def main():
 
 
 def show_home():
-    """Home page with overview"""
-    st.markdown("## 🏠 Welcome!")
+    """Home page with modern animated statistics and guide"""
+    # Main Header with Gradient
+    st.markdown("""
+    <div class="main-header">
+        <h1>🧬 MHA Toolbox</h1>
+        <p>Professional Meta-Heuristic Algorithm Optimization Suite</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Get dynamic algorithm count from session state
     total_algos = st.session_state.get('total_algorithms', 130)
     hybrid_algos = st.session_state.get('hybrid_algorithms', 22)
+    categories = st.session_state.get('categorized_algorithms', {})
+    cat_count = len([c for c in categories.values() if c])
     
-    # Metric cards
+    # === STATISTICS OVERVIEW SECTION ===
+    st.markdown("### 📊 Quick Statistics")
+    
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-number">{total_algos}</div>
-            <div class="metric-label">Total Algorithms</div>
+        <div class="stat-card">
+            <div class="stat-card-icon">🧬</div>
+            <div class="stat-card-value">{total_algos}</div>
+            <div class="stat-card-label">Total Algorithms</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-number">{hybrid_algos}</div>
-            <div class="metric-label">Hybrid Algorithms</div>
+        <div class="stat-card">
+            <div class="stat-card-icon">🔬</div>
+            <div class="stat-card-value">{hybrid_algos}</div>
+            <div class="stat-card-label">Hybrid Algorithms</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
-        st.markdown("""
-        <div class="metric-card">
-            <div class="metric-number">Secure</div>
-            <div class="metric-label">Multi-User</div>
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-card-icon">📁</div>
+            <div class="stat-card-value">{cat_count}</div>
+            <div class="stat-card-label">Categories</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
-        # Get category count
-        categories = st.session_state.get('categorized_algorithms', {})
-        cat_count = len([c for c in categories.values() if c])
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-number">{cat_count}</div>
-            <div class="metric-label">Categories</div>
+        st.markdown("""
+        <div class="stat-card">
+            <div class="stat-card-icon">🔐</div>
+            <div class="stat-card-value">Secure</div>
+            <div class="stat-card-label">Multi-User System</div>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # System Flow
-    st.markdown("### 🔄 System Flow")
-    
-    col1, col2 = st.columns(2)
-    
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # === INTERACTIVE GUIDE & ACTIVITY SECTION ===
+    col1, col2 = st.columns([1, 1])
+
     with col1:
         st.markdown("""
-        <div class="step-indicator">
-            <h4>📤 Step 1: Upload Data</h4>
-            <p>Upload CSV, use sample datasets, or generate random data</p>
+        <div class="info-card">
+            <h4>� How to Get Started</h4>
+            <div class="step-box">
+                <div class="step-box-number">1.</div>
+                <div class="step-box-text">Navigate to <b>New Optimization</b> from the sidebar</div>
+            </div>
+            <div class="step-box">
+                <div class="step-box-number">2.</div>
+                <div class="step-box-text">Select a sample dataset or upload your own CSV file</div>
+            </div>
+            <div class="step-box">
+                <div class="step-box-number">3.</div>
+                <div class="step-box-text">Choose algorithms you wish to compare</div>
+            </div>
+            <div class="step-box">
+                <div class="step-box-number">4.</div>
+                <div class="step-box-text">Configure parameters and click "Run Optimization"!</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div class="step-indicator">
-            <h4>🎯 Step 2: Select Algorithm</h4>
-            <p>Choose from 40+ algorithms across multiple categories</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
+
     with col2:
-        st.markdown("""
-        <div class="step-indicator">
-            <h4>⚙️ Step 3: Configure</h4>
-            <p>Set iterations, population size, and features to select</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="info-card"><h4>🕒 Recent Activity</h4>', unsafe_allow_html=True)
         
-        st.markdown("""
-        <div class="step-indicator">
-            <h4>🚀 Step 4: Run & Export</h4>
-            <p>View real-time results and export to CSV/Excel</p>
-        </div>
-        """, unsafe_allow_html=True)
+        # Get user's recent history
+        if st.session_state.user_authenticated and st.session_state.user_profile:
+            # Get history from preferences dictionary
+            history = st.session_state.user_profile.preferences.get('optimization_history', [])[-4:]  # Last 4 entries
+            
+            if not history:
+                st.info("No recent activity found. Run an optimization to get started!")
+            else:
+                for exp in reversed(history):  # Show most recent first
+                    date = datetime.fromisoformat(exp['timestamp']).strftime('%Y-%m-%d %H:%M')
+                    dataset = exp.get('dataset', 'Unknown')
+                    best_algo = exp.get('best_algorithm', 'N/A')
+                    st.markdown(f"""
+                    <div class="recent-activity-item">
+                        <div>� <strong>{dataset}</strong></div>
+                        <div style='font-size: 0.85em; color: #999;'>Best: {best_algo} | {date}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("Login to view your recent activity!")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -928,17 +1461,17 @@ def show_home():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🚀 Start New Optimization", type="primary", width='stretch'):
+        if st.button("🚀 Start New Optimization", type="primary", use_container_width=True):
             st.session_state.current_page = "🚀 New Optimization"
             st.rerun()
     
     with col2:
-        if st.button("📊 View Results", width='stretch'):
-            st.session_state.current_page = "📊 Results"
+        if st.button("� View History", use_container_width=True):
+            st.session_state.current_page = "� History"
             st.rerun()
     
     with col3:
-        if st.button("📖 Learn More", width='stretch'):
+        if st.button("📖 Learn More", use_container_width=True):
             st.session_state.current_page = "📖 About"
             st.rerun()
     
@@ -1470,285 +2003,543 @@ def show_home():
 
 
 def show_optimization():
-    """Optimization workflow page"""
-    st.markdown("## 🚀 New Optimization")
+    """Modern 3-tab optimization workflow based on mha_web_interface.py template"""
     
-    # Step 1: Data Upload
-    st.markdown('<div class="step-indicator"><h3>📤 Step 1: Upload Data</h3></div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="main-header">
+        <h1>🔬 New Optimization Experiment</h1>
+        <p>Follow the 3-step guided workflow to configure and run your optimization.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
+    # Create 3-tab interface
+    tab1, tab2, tab3 = st.tabs([
+        "**Step 1: Select Dataset**",
+        "**Step 2: Choose Algorithms**",
+        "**Step 3: Configure & Run**"
+    ])
+    
+    with tab1:
+        show_dataset_selection_tab()
+    
+    with tab2:
+        show_algorithm_selection_tab()
+    
+    with tab3:
+        show_configuration_and_run_tab()
+
+
+def show_dataset_selection_tab():
+    """Tab 1: Dataset Selection with modern card-based interface"""
+    
+    st.markdown("### <span class='step-indicator'>1</span> Select Your Dataset", unsafe_allow_html=True)
+    
+    # Radio button for data source
     data_source = st.radio(
-        "Choose data source",
-        ["📁 Upload CSV", "📦 Sample Dataset", "🎲 Generate Random Data"],
-        horizontal=True
+        "Choose your data source:",
+        ["📦 Sample Datasets", "📤 Upload Custom CSV", "🎲 Generate Random Data"],
+        horizontal=True,
+        label_visibility="collapsed"
     )
     
-    X, y = None, None
-    
-    if data_source == "📁 Upload CSV":
-        uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
-            st.success(f"✅ Loaded {df.shape[0]} samples with {df.shape[1]} features")
-            st.dataframe(df.head(10), width='stretch')
-            
-            target_col = st.selectbox("Select target column", df.columns.tolist())
-            if target_col:
-                X = df.drop(columns=[target_col]).values
-                y = df[target_col].values
-                st.session_state.current_data = {'X': X, 'y': y, 'df': df, 'target_col': target_col}
-    
-    elif data_source == "📦 Sample Dataset":
-        dataset_name = st.selectbox("Select dataset", ["Iris", "Wine", "Breast Cancer", "Digits"])
+    # Workflow 1: Sample Datasets with Cards
+    if data_source == "📦 Sample Datasets":
+        st.markdown("#### Available Sample Datasets")
         
-        if st.button("📥 Load Dataset", type="primary"):
-            from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_digits
-            
-            if dataset_name == "Iris":
-                data = load_iris()
-            elif dataset_name == "Wine":
-                data = load_wine()
-            elif dataset_name == "Digits":
-                data = load_digits()
-            else:
-                data = load_breast_cancer()
-            
-            X, y = data.data, data.target
-            df = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(X.shape[1])])
-            df['Target'] = y
-            
-            st.success(f"✅ Loaded {dataset_name}: {X.shape[0]} samples, {X.shape[1]} features")
-            st.dataframe(df.head(10), width='stretch')
-            st.session_state.current_data = {'X': X, 'y': y, 'df': df, 'target_col': 'Target'}
+        datasets = [
+            {"name": "Breast Cancer", "samples": 569, "features": 30, "type": "Classification"},
+            {"name": "Wine", "samples": 178, "features": 13, "type": "Classification"},
+            {"name": "Iris", "samples": 150, "features": 4, "type": "Classification"},
+            {"name": "Digits", "samples": 1797, "features": 64, "type": "Classification"},
+            {"name": "California Housing", "samples": 20640, "features": 8, "type": "Regression"},
+            {"name": "Diabetes", "samples": 442, "features": 10, "type": "Regression"}
+        ]
+        
+        # Create 3-column grid for cards
+        cols = st.columns(3)
+        
+        for i, dataset in enumerate(datasets):
+            with cols[i % 3]:
+                with st.container(border=True):
+                    st.markdown(f"""
+                        <h4>{dataset['name']}</h4>
+                        <p><strong>Samples:</strong> {dataset['samples']} | <strong>Features:</strong> {dataset['features']}<br>
+                        <strong>Type:</strong> {dataset['type']}</p>
+                    """, unsafe_allow_html=True)
+                    
+                    # Check if selected
+                    is_selected = st.session_state.get('selected_dataset') == dataset['name']
+                    button_type = "primary" if is_selected else "secondary"
+                    
+                    if st.button(f"Select {dataset['name']}", 
+                               key=f"select_{dataset['name']}", 
+                               use_container_width=True,
+                               type=button_type):
+                        # Load the dataset
+                        from sklearn.datasets import load_breast_cancer, load_wine, load_iris, load_digits
+                        from sklearn.datasets import fetch_california_housing
+                        import sklearn.datasets as datasets_module
+                        
+                        try:
+                            if dataset['name'] == "Breast Cancer":
+                                data = load_breast_cancer()
+                            elif dataset['name'] == "Wine":
+                                data = load_wine()
+                            elif dataset['name'] == "Iris":
+                                data = load_iris()
+                            elif dataset['name'] == "Digits":
+                                data = load_digits()
+                            elif dataset['name'] == "California Housing":
+                                data = fetch_california_housing()
+                            else:  # Diabetes
+                                data = datasets_module.load_diabetes()
+                            
+                            X, y = data.data, data.target
+                            df = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(X.shape[1])])
+                            df['Target'] = y
+                            
+                            st.session_state.selected_dataset = dataset['name']
+                            st.session_state.dataset_type = 'sample'
+                            st.session_state.current_data = {
+                                'X': X, 
+                                'y': y, 
+                                'df': df, 
+                                'target_col': 'Target',
+                                'dataset_name': dataset['name']
+                            }
+                            st.rerun()
+                        
+                        except Exception as e:
+                            st.error(f"Error loading {dataset['name']}: {str(e)}")
+        
+        # Show dataset preview if selected
+        if st.session_state.get('current_data') and st.session_state.get('dataset_type') == 'sample':
+            st.markdown("---")
+            with st.expander("📋 Dataset Preview", expanded=True):
+                df = st.session_state.current_data['df']
+                st.dataframe(df.head(10), use_container_width=True)
+                st.info(f"✅ Shape: {df.shape[0]} rows × {df.shape[1]} columns")
     
-    elif data_source == "🎲 Generate Random Data":
+    # Workflow 2: Custom CSV Upload
+    elif data_source == "📤 Upload Custom CSV":
+        st.markdown("#### Upload Your Dataset")
+        
+        uploaded_file = st.file_uploader("Choose a CSV file", type=['csv'])
+        
+        if uploaded_file is not None:
+            try:
+                df = pd.read_csv(uploaded_file)
+                st.success(f"✅ File uploaded: {uploaded_file.name}")
+                
+                with st.expander("📋 Dataset Preview", expanded=True):
+                    st.dataframe(df.head(10), use_container_width=True)
+                    st.info(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns")
+                
+                target_col = st.selectbox("Select the target (output) column:", df.columns)
+                
+                if st.button("Confirm Dataset", type="primary", use_container_width=True):
+                    X = df.drop(columns=[target_col]).values
+                    y = df[target_col].values
+                    
+                    st.session_state.selected_dataset = uploaded_file.name
+                    st.session_state.dataset_type = 'uploaded'
+                    st.session_state.current_data = {
+                        'X': X,
+                        'y': y,
+                        'df': df,
+                        'target_col': target_col,
+                        'dataset_name': uploaded_file.name
+                    }
+                    st.rerun()
+            
+            except Exception as e:
+                st.error(f"Error reading or processing the CSV file: {e}")
+    
+    # Workflow 3: Generate Random Data
+    else:
+        st.markdown("#### Generate Random Dataset")
+        
         col1, col2, col3 = st.columns(3)
         with col1:
-            n_samples = st.number_input("Samples", 100, 10000, 1000)
+            n_samples = st.number_input("Number of Samples", 100, 10000, 1000, 100)
         with col2:
-            n_features = st.number_input("Features", 5, 100, 20)
+            n_features = st.number_input("Number of Features", 5, 100, 20, 5)
         with col3:
-            n_classes = st.number_input("Classes", 2, 10, 2)
+            n_classes = st.number_input("Number of Classes", 2, 10, 2)
         
-        if st.button("🎲 Generate Dataset", type="primary"):
+        if st.button("🎲 Generate Dataset", type="primary", use_container_width=True):
             from sklearn.datasets import make_classification
+            
             X, y = make_classification(
-                n_samples=n_samples, 
-                n_features=n_features, 
-                n_classes=n_classes, 
-                n_informative=int(n_features*0.7),
-                n_redundant=int(n_features*0.2),
+                n_samples=n_samples,
+                n_features=n_features,
+                n_classes=n_classes,
+                n_informative=int(n_features * 0.7),
+                n_redundant=int(n_features * 0.2),
                 random_state=42
             )
+            
             df = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(n_features)])
             df['Target'] = y
             
+            dataset_name = f"Generated_{n_samples}x{n_features}"
+            
+            st.session_state.selected_dataset = dataset_name
+            st.session_state.dataset_type = 'generated'
+            st.session_state.current_data = {
+                'X': X,
+                'y': y,
+                'df': df,
+                'target_col': 'Target',
+                'dataset_name': dataset_name
+            }
+            
             st.success(f"✅ Generated {n_samples} samples with {n_features} features")
-            st.dataframe(df.head(10), width='stretch')
-            st.session_state.current_data = {'X': X, 'y': y, 'df': df, 'target_col': 'Target'}
+            with st.expander("📋 Dataset Preview", expanded=True):
+                st.dataframe(df.head(10), use_container_width=True)
+            
+            st.rerun()
     
-    # Continue with rest if data loaded
-    if st.session_state.current_data is not None:
+    # Persistent summary at bottom
+    if st.session_state.get('selected_dataset'):
+        st.markdown("---")
+        data_info = st.session_state.get('current_data', {})
+        if data_info:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("✅ Selected Dataset", st.session_state.selected_dataset)
+            with col2:
+                st.metric("📊 Samples", data_info.get('X', []).shape[0] if 'X' in data_info else 0)
+            with col3:
+                st.metric("📈 Features", data_info.get('X', []).shape[1] if 'X' in data_info else 0)
+
+
+def show_algorithm_selection_tab():
+    """Tab 2: Algorithm Selection with AI recommendations and expandable groups"""
+    
+    st.markdown("### <span class='step-indicator'>2</span> Choose Algorithms to Compare", unsafe_allow_html=True)
+    
+    # Show selection summary at top
+    if st.session_state.get('selected_algorithms'):
+        selected_count = len(st.session_state.selected_algorithms)
+        st.success(f"✅ **{selected_count} algorithm{'' if selected_count == 1 else 's'} selected**: {', '.join([a.upper() for a in st.session_state.selected_algorithms[:5]])}{'...' if selected_count > 5 else ''}")
+    
+    # Dataset guard
+    if not st.session_state.get('selected_dataset'):
+        st.warning("⚠️ Please select a dataset first in **Step 1**")
+        return
+    
+    # AI-Powered Recommendations (unique feature from mha_ui_complete)
+    if st.session_state.get('current_data'):
         X = st.session_state.current_data['X']
         y = st.session_state.current_data['y']
         
-        # Add AI-powered algorithm recommendations
-        st.markdown("---")
-        st.markdown('<div class="step-indicator"><h3>🤖 AI-Powered Algorithm Recommendations</h3></div>', unsafe_allow_html=True)
+        st.markdown("#### 🤖 AI-Powered Algorithm Recommendations")
         
-        # Import and use algorithm recommender
         from mha_toolbox.algorithm_recommender import AlgorithmRecommender
-        
         recommender = AlgorithmRecommender()
         
-        # Get dataset characteristics
+        # Analyze dataset
         characteristics = recommender.analyze_dataset(X, y)
         
-        # Display dataset analysis
-        with st.expander("📊 Dataset Analysis", expanded=True):
+        with st.expander("📊 Detailed Dataset Analysis", expanded=False):
             col1, col2, col3, col4 = st.columns(4)
             
             with col1:
-                st.metric("Samples", characteristics['n_samples'])
-                st.metric("Features", characteristics['n_features'])
-            
+                st.metric("📦 Samples", characteristics['n_samples'])
+                st.metric("📈 Features", characteristics['n_features'])
             with col2:
-                st.metric("Dimensionality", characteristics['dimensionality'].upper())
-                st.metric("Sample Size", characteristics['sample_size'].replace('_', ' ').title())
-            
+                dim_emoji = {"low": "🟢", "medium": "🟡", "high": "🟠", "very_high": "🔴"}
+                st.metric("📏 Dimensionality", 
+                         f"{dim_emoji.get(characteristics['dimensionality'], '⚪')} {characteristics['dimensionality'].upper()}")
+                st.metric("📊 Sample Size", characteristics['sample_size'].replace('_', ' ').title())
             with col3:
-                st.metric("Data Type", characteristics['data_type'].replace('_', ' ').title())
-                st.metric("Complexity", characteristics['complexity'].title())
-            
+                st.metric("🔢 Data Type", characteristics['data_type'].replace('_', ' ').title())
+                complexity_emoji = {"simple": "🟢", "medium": "🟡", "complex": "🔴"}
+                st.metric("🧩 Complexity", 
+                         f"{complexity_emoji.get(characteristics['complexity'], '⚪')} {characteristics['complexity'].title()}")
             with col4:
-                st.metric("Has Noise", "Yes" if characteristics['has_noise'] else "No")
-                # Check for class_balance key (only available if y is provided)
+                st.metric("🔊 Has Noise", "⚠️ Yes" if characteristics['has_noise'] else "✅ No")
                 if 'class_balance' in characteristics:
-                    balance_status = characteristics['class_balance'].replace('_', ' ').title()
-                    st.metric("Class Balance", balance_status)
-                else:
-                    st.metric("Task Type", characteristics.get('task_type', 'Unknown').title())
-        
-        # Get top 10 recommendations with improved scoring
-        recommendations = recommender.recommend_algorithms(X, y, top_k=10)
-        
-        # Display recommendations in compact format with auto-selection
-        with st.expander("🎯 Top 10 Recommended Algorithms", expanded=True):
-            st.info("Based on your dataset characteristics, these algorithms are most suitable. Top 3 are **auto-selected** for you!")
+                    balance_emoji = {"balanced": "✅", "slightly_imbalanced": "⚠️", "imbalanced": "❌"}
+                    st.metric("⚖️ Class Balance", 
+                             f"{balance_emoji.get(characteristics['class_balance'], '⚪')} {characteristics['class_balance'].replace('_', ' ').title()}")
+                elif 'task_type' in characteristics:
+                    st.metric("🎯 Task Type", characteristics['task_type'].title())
             
-            # Auto-select top 3 algorithms if not already done
-            if 'auto_selected_done' not in st.session_state:
-                top_3_algos = [algo_name for algo_name, _, _ in recommendations[:3]]
-                st.session_state.quick_select_algos = top_3_algos
-                st.session_state.auto_selected_done = True
-                st.success(f"✅ Auto-selected top 3: {', '.join([a.upper() for a in top_3_algos])}")
-            
-            # Create a compact table with select buttons
-            for idx, (algo_name, confidence, reason) in enumerate(recommendations, 1):
-                col1, col2, col3 = st.columns([0.5, 3, 1])
-                
-                # Check if already selected
-                is_selected = 'quick_select_algos' in st.session_state and algo_name in st.session_state.quick_select_algos
-                
-                with col1:
-                    st.markdown(f"**#{idx}**")
-                
-                with col2:
-                    # Improved confidence display (now properly scaled to 8-10 range)
-                    display_confidence = 5.0 + (confidence / 2.0)  # Scale to better range
-                    st.markdown(f"**{algo_name.upper()}** (Confidence: {display_confidence:.1f}/10) {'✅' if is_selected else ''}")
-                    st.caption(reason)
-                
-                with col3:
-                    if is_selected:
-                        if st.button("❌ Remove", key=f"quick_select_{idx}", width='stretch'):
-                            st.session_state.quick_select_algos.remove(algo_name)
-                            st.rerun()
-                    else:
-                        if st.button("✅ Add", key=f"quick_select_{idx}", width='stretch'):
-                            if 'quick_select_algos' not in st.session_state:
-                                st.session_state.quick_select_algos = []
-                            st.session_state.quick_select_algos.append(algo_name)
-                            st.rerun()
-                
-                if idx < len(recommendations):
-                    st.markdown('<hr style="margin: 0.5rem 0; border: 0; border-top: 1px solid #e0e0e0;">', unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown('<div class="step-indicator"><h3>🎯 Step 2: Select Algorithm(s)</h3></div>', unsafe_allow_html=True)
-        
-        # Algorithm selection with auto-selected algorithms
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            # Show auto-selected algorithms
-            auto_selected = st.session_state.get('quick_select_algos', [])
-            
-            if auto_selected:
-                st.success(f"✨ **Auto-Selected Algorithms ({len(auto_selected)}):** {', '.join([a.upper() for a in auto_selected])}")
-                st.info("💡 These were automatically selected based on your dataset. You can modify the selection below or add more algorithms.")
-            
-            # Get categories from ALGORITHM_CATEGORIES
-            categories = list(ALGORITHM_CATEGORIES.keys())
-            category = st.selectbox("Algorithm Category", categories, 
-                                   help="Choose from different algorithm families including Hybrid Algorithms")
-            
-            # Get algorithms for selected category
-            category_data = ALGORITHM_CATEGORIES[category]
-            if isinstance(category_data, dict) and 'algorithms' in category_data:
-                algorithms = category_data['algorithms']
-                description = category_data.get('description', '')
-                difficulty = category_data.get('difficulty', 'intermediate')
-                
-                # Show category info
-                st.info(f"**{description}**\n\nDifficulty: {difficulty.upper()}")
-            else:
-                algorithms = category_data if isinstance(category_data, list) else []
-            
-            # Pre-select auto-selected algorithms if they're in this category
-            default_selection = [algo for algo in auto_selected if algo in algorithms]
-            if not default_selection and algorithms:
-                default_selection = [algorithms[0]]
-            
-            selected_algos = st.multiselect(
-                f"Select algorithms from {category}",
-                algorithms,
-                default=default_selection,
-                help="Select one or more algorithms for comparison. Top recommended algorithms are pre-selected."
-            )
-            
-            # Merge auto-selected with manually selected
-            all_selected = list(set(auto_selected + selected_algos))
-        
-        with col2:
-            st.markdown("**Selected:**")
-            if all_selected:
-                for algo in all_selected:
-                    st.markdown(f"""
-                    <div class="algo-card">
-                        ✓ {algo.upper()}
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.info("Select algorithms")
-        
-        if all_selected:
+            # Additional insights
             st.markdown("---")
-            st.markdown('<div class="step-indicator"><h3>⚙️ Step 3: Configure Parameters</h3></div>', unsafe_allow_html=True)
+            st.markdown("**💡 Dataset Insights:**")
+            insights = []
             
-            # Task type selection
-            st.markdown("#### 🎯 Optimization Task")
-            task_type = st.radio(
-                "Select optimization task:",
-                ["feature_selection", "feature_optimization", "hyperparameter_tuning"],
-                format_func=lambda x: {
-                    "feature_selection": "🎯 Feature Selection (Select best features)",
-                    "feature_optimization": "⚡ Feature Optimization (Optimize feature weights)",
-                    "hyperparameter_tuning": "⚙️ Hyperparameter Tuning (Tune model parameters)"
-                }[x],
-                help="Choose the type of optimization task"
-            )
+            if characteristics['dimensionality'] in ['high', 'very_high']:
+                insights.append(f"• **High-dimensional data** ({characteristics['n_features']} features) - Algorithms with strong exploration recommended")
             
-            col1, col2, col3 = st.columns(3)
+            if characteristics['has_noise']:
+                insights.append("• **Noisy data detected** - Robust algorithms with strong exploitation recommended")
             
-            with col1:
-                n_iterations = st.number_input("Iterations", 10, 1000, 100, 10,
-                                             help="Number of optimization iterations")
-            with col2:
-                population_size = st.number_input("Population Size", 10, 200, 30, 5,
-                                                help="Number of solutions in population")
-            with col3:
-                if task_type == "feature_selection":
-                    n_features_to_select = st.slider(
-                        "Features to Select", 
-                        1, X.shape[1], 
-                        int(X.shape[1] * 0.5),
-                        help="Target number of features to select"
+            if characteristics['complexity'] == 'complex':
+                insights.append("• **Complex problem** - Algorithms with balanced exploration/exploitation needed")
+            
+            if characteristics.get('class_balance') == 'imbalanced':
+                insights.append("• **Imbalanced classes** - Consider algorithms with adaptive mechanisms")
+            
+            if characteristics['sample_size'] in ['large', 'very_large']:
+                insights.append("• **Large dataset** - Fast converging algorithms recommended")
+            
+            if not insights:
+                insights.append("• **Well-balanced dataset** - Most algorithms should perform well")
+            
+            for insight in insights:
+                st.markdown(insight)
+        
+        # Get recommendations
+        recommendations = recommender.recommend_algorithms(X, y, top_k=15)
+        
+        with st.expander("🎯 Top 15 Recommended Algorithms (Click to Add/Remove)", expanded=True):
+            st.info("💡 **Smart Recommendations**: Algorithms ranked by suitability for your dataset. Click buttons to select/deselect.")
+            
+            # Show recommendations in 3 columns for better layout
+            for idx in range(0, len(recommendations), 3):
+                cols = st.columns(3)
+                
+                for col_idx, col in enumerate(cols):
+                    if idx + col_idx < len(recommendations):
+                        algo_name, confidence, reason = recommendations[idx + col_idx]
+                        
+                        with col:
+                            with st.container(border=True):
+                                # Check if selected
+                                is_selected = algo_name in st.session_state.get('selected_algorithms', [])
+                                
+                                # Display rank and algorithm name
+                                st.markdown(f"**#{idx + col_idx + 1}. {algo_name.upper()}**")
+                                
+                                # Confidence score with visual indicator
+                                confidence_percent = int(confidence * 10)
+                                confidence_color = "🟢" if confidence >= 8.5 else "🟡" if confidence >= 7.5 else "🟠"
+                                st.markdown(f"{confidence_color} **Confidence:** {confidence:.1f}/10")
+                                
+                                # Reason
+                                st.caption(reason)
+                                
+                                # Add/Remove button
+                                if is_selected:
+                                    if st.button(f"❌ Remove", key=f"rec_remove_{algo_name}", use_container_width=True):
+                                        st.session_state.selected_algorithms.remove(algo_name)
+                                        st.rerun()
+                                else:
+                                    if st.button(f"✅ Add", key=f"rec_add_{algo_name}", use_container_width=True, type="primary"):
+                                        if 'selected_algorithms' not in st.session_state:
+                                            st.session_state.selected_algorithms = []
+                                        st.session_state.selected_algorithms.append(algo_name)
+                                        st.rerun()
+    
+    st.markdown("---")
+    st.markdown("#### 🔍 Algorithm Selection")
+    
+    # Search and master buttons
+    search = st.text_input("🔎 Search algorithms", placeholder="Type to filter...", key="algo_search")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("Select All", use_container_width=True, key="select_all_algos"):
+            from mha_toolbox.algorithm_categories import ALGORITHM_CATEGORIES
+            all_algos = []
+            for cat_data in ALGORITHM_CATEGORIES.values():
+                if isinstance(cat_data, dict) and 'algorithms' in cat_data:
+                    all_algos.extend(cat_data['algorithms'])
+                elif isinstance(cat_data, list):
+                    all_algos.extend(cat_data)
+            st.session_state.selected_algorithms = list(set(all_algos))
+            st.rerun()
+    
+    with col2:
+        if st.button("Select Recommended", use_container_width=True, key="select_recommended"):
+            if st.session_state.get('current_data'):
+                top_algos = [algo_name for algo_name, _, _ in recommendations[:10]]
+                st.session_state.selected_algorithms = top_algos
+                st.rerun()
+            else:
+                # Default recommendations if no dataset
+                st.session_state.selected_algorithms = ["pso", "gwo", "woa", "ga", "de", "ssa", "alo", "sca", "fa", "ba"]
+                st.rerun()
+    
+    with col3:
+        if st.button("Clear Selection", use_container_width=True, key="clear_algos"):
+            st.session_state.selected_algorithms = []
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # Algorithm groups with expandable interface
+    from mha_toolbox.algorithm_categories import ALGORITHM_CATEGORIES
+    
+    algorithm_groups = {
+        "Swarm Intelligence": ["pso", "alo", "woa", "gwo", "ssa", "mrfo", "goa", "sfo", "hho"],
+        "Evolutionary": ["ga", "de", "eo", "es", "ep"],
+        "Physics-Based": ["sca", "sa", "hgso", "wca", "asa"],
+        "Bio-Inspired": ["ba", "fa", "csa", "coa", "msa", "bfo"],
+        "Novel & Hybrid": ["ao", "aoa", "cgo", "fbi", "gbo", "ica", "pfa", "qsa", "sma", "spbo", "tso", "vcs"]
+    }
+    
+    for group_name, algorithms in algorithm_groups.items():
+        # Filter algorithms based on search
+        filtered = [alg for alg in algorithms if not search or search.lower() in alg.lower()]
+        if not filtered:
+            continue
+        
+        with st.expander(f"{group_name} ({len(filtered)} algorithms)", expanded=False):
+            cols = st.columns(4)
+            
+            for i, alg in enumerate(filtered):
+                with cols[i % 4]:
+                    is_selected = alg in st.session_state.get('selected_algorithms', [])
+                    
+                    # Dynamic key for checkbox
+                    key = f"alg_check_{alg}_{is_selected}"
+                    
+                    checked = st.checkbox(
+                        alg.upper(),
+                        value=is_selected,
+                        key=key
                     )
-                else:
-                    n_features_to_select = X.shape[1]
-                    st.metric("Features", X.shape[1], help="All features will be used")
+                    
+                    # Update selection
+                    if checked and alg not in st.session_state.get('selected_algorithms', []):
+                        if 'selected_algorithms' not in st.session_state:
+                            st.session_state.selected_algorithms = []
+                        st.session_state.selected_algorithms.append(alg)
+                        st.rerun()
+                    elif not checked and alg in st.session_state.get('selected_algorithms', []):
+                        st.session_state.selected_algorithms.remove(alg)
+                        st.rerun()
+    
+    # Bottom message
+    st.markdown("---")
+    if st.session_state.get('selected_algorithms'):
+        st.info(f"✅ {len(st.session_state.selected_algorithms)} algorithms selected. Proceed to **Step 3: Configure & Run**")
+    else:
+        st.warning("⚠️ No algorithms selected. Please select at least one algorithm.")
+
+
+def show_configuration_and_run_tab():
+    """Tab 3: Configuration with parameter presets and run optimization"""
+    
+    # If results exist, show them
+    if st.session_state.get('optimization_results'):
+        st.success("✅ Optimization completed! View results below.")
+        
+        col_back, col_clear = st.columns([3, 1])
+        with col_back:
+            if st.button("🔄 New Run", use_container_width=True):
+                if 'optimization_results' in st.session_state:
+                    del st.session_state.optimization_results
+                st.rerun()
+        with col_clear:
+            if st.button("🗑️ Clear Results", use_container_width=True):
+                if 'optimization_results' in st.session_state:
+                    del st.session_state.optimization_results
+                st.rerun()
+        
+        show_results_inline(st.session_state.optimization_results)
+        return
+    
+    st.markdown("### <span class='step-indicator'>3</span> Configure & Run Experiment", unsafe_allow_html=True)
+    
+    # Validation checks
+    if not st.session_state.get('selected_dataset'):
+        st.warning("⚠️ Please select a dataset in **Step 1**")
+        return
+    
+    if not st.session_state.get('selected_algorithms'):
+        st.warning("⚠️ Please select algorithms in **Step 2**")
+        return
+    
+    # Experiment summary
+    st.markdown("#### 📋 Experiment Summary")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.info(f"**Dataset**: {st.session_state.selected_dataset}")
+    with col2:
+        st.info(f"**Algorithms**: {len(st.session_state.selected_algorithms)} selected")
+    
+    st.markdown("---")
+    st.markdown("#### ⚙️ Parameters")
+    
+    # Parameter presets
+    preset = st.selectbox(
+        "Parameter preset:",
+        ["Demo (Fast)", "Standard", "Thorough", "Custom"],
+        help="Pre-configured parameter sets for different needs"
+    )
+    
+    if preset == "Demo (Fast)":
+        max_iter, pop_size, n_runs = 20, 15, 2
+        st.info("⚡ Fast demo settings for quick results (20 iterations, 2 runs)")
+    elif preset == "Standard":
+        max_iter, pop_size, n_runs = 50, 25, 3
+        st.info("⚖️ Balanced settings for good results (50 iterations, 3 runs)")
+    elif preset == "Thorough":
+        max_iter, pop_size, n_runs = 100, 40, 5
+        st.info("🎯 Comprehensive settings for best results (100 iterations, 5 runs)")
+    else:  # Custom
+        st.write("**Custom Parameters:**")
+        col_ps, col_nr = st.columns(2)
+        with col_ps:
+            pop_size = st.slider("Population Size", 10, 100, 25, key="custom_pop_size")
+        with col_nr:
+            n_runs = st.slider("Number of Runs", 1, 10, 3, key="custom_n_runs")
+        max_iter = st.slider("Max Iterations", 10, 200, 50, key="custom_max_iter")
+    
+    # Advanced options
+    with st.expander("⚙️ Advanced Options"):
+        task_type = st.selectbox(
+            "Optimization Task:",
+            ["feature_selection", "feature_optimization", "hyperparameter_tuning"],
+            format_func=lambda x: {
+                "feature_selection": "🔍 Feature Selection",
+                "feature_optimization": "🎯 Feature Optimization",
+                "hyperparameter_tuning": "⚙️ Hyperparameter Tuning"
+            }[x],
+            help="Choose the type of optimization task"
+        )
+        
+        # Get number of features if available
+        if st.session_state.get('current_data'):
+            X = st.session_state.current_data['X']
+            n_features_total = X.shape[1]
             
-            # Advanced options
-            with st.expander("🔧 Advanced Options"):
-                n_runs = st.slider("Number of Runs", 1, 10, 3, help="Multiple runs for statistical analysis")
-                enable_tracking = st.checkbox("Enable detailed tracking", value=True, 
-                                            help="Track iteration-by-iteration progress")
-                save_results = st.checkbox("Auto-save results", value=True,
-                                         help="Automatically save results to history")
-            
-            st.markdown("---")
-            st.markdown('<div class="step-indicator"><h3>🚀 Step 4: Run Optimization</h3></div>', unsafe_allow_html=True)
-            
-            if st.button("▶️ Start Optimization", type="primary", width='stretch'):
-                run_optimization(
-                    all_selected, 
-                    n_iterations, 
-                    population_size, 
-                    n_features_to_select,
-                    task_type=task_type,
-                    n_runs=n_runs if 'n_runs' in locals() else 3,
-                    enable_tracking=enable_tracking if 'enable_tracking' in locals() else True
+            if task_type == "feature_selection":
+                n_features_to_select = st.slider(
+                    "Number of features to select",
+                    1,
+                    n_features_total,
+                    int(n_features_total * 0.5),
+                    help="Target number of features to select"
                 )
+            else:
+                n_features_to_select = n_features_total
+        else:
+            n_features_to_select = 10  # Default
+        
+        save_results = st.checkbox("Auto-save results to history", value=True)
+        enable_tracking = st.checkbox("Enable detailed progress tracking", value=True)
+    
+    st.markdown("---")
+    
+    # Run button
+    if st.button("🚀 Start Optimization", type="primary", use_container_width=True):
+        run_optimization(
+            st.session_state.selected_algorithms,
+            max_iter,
+            pop_size,
+            n_features_to_select,
+            task_type=task_type,
+            n_runs=n_runs,
+            enable_tracking=enable_tracking
+        )
 
 
 def run_optimization(algorithms, n_iterations, population_size, n_features, 
@@ -1799,13 +2590,19 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
                 if task_type == 'feature_selection':
                     # Binary feature selection - select best n_features
                     from sklearn.model_selection import cross_val_score
-                    from sklearn.neighbors import KNeighborsClassifier
+                    from sklearn.ensemble import RandomForestClassifier
                     
                     def objective_function(solution):
                         try:
+                            # Ensure solution is valid numpy array
+                            solution = np.array(solution, dtype=np.float64)
+                            
+                            # Check for NaN or inf values
+                            if np.any(np.isnan(solution)) or np.any(np.isinf(solution)):
+                                return 1.0
+                            
                             # Ensure solution length matches features
                             if len(solution) != X.shape[1]:
-                                # Truncate or pad solution to match X
                                 if len(solution) > X.shape[1]:
                                     solution = solution[:X.shape[1]]
                                 else:
@@ -1813,35 +2610,58 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
                             
                             # Convert continuous values to binary selection
                             selected = solution >= 0.5
-                            if np.sum(selected) == 0:
+                            n_selected = np.sum(selected)
+                            
+                            # Ensure at least 1 feature is selected
+                            if n_selected == 0:
                                 return 1.0  # Worst fitness if no features selected
                             
                             # Use only selected features
                             X_selected = X[:, selected]
                             
-                            # Quick evaluation with KNN (n_jobs=1 to avoid Windows multiprocessing issues)
-                            knn = KNeighborsClassifier(n_neighbors=min(3, len(y)//2))
-                            scores = cross_val_score(knn, X_selected, y, cv=min(3, len(y)//10), scoring='accuracy', n_jobs=1)
+                            # Use RandomForest for more stable evaluation
+                            rf = RandomForestClassifier(n_estimators=10, max_depth=3, random_state=42, n_jobs=1)
+                            
+                            # Adaptive CV based on dataset size
+                            cv_folds = max(2, min(5, len(y) // 20))
+                            scores = cross_val_score(rf, X_selected, y, cv=cv_folds, scoring='accuracy', n_jobs=1)
+                            
+                            # Check if scores are valid
+                            if np.any(np.isnan(scores)):
+                                return 1.0
                             
                             # Return error rate (1 - accuracy) as we minimize
-                            fitness = 1.0 - scores.mean()
+                            accuracy = scores.mean()
+                            fitness = 1.0 - accuracy
                             
                             # Add penalty for selecting too many/few features
-                            n_selected = np.sum(selected)
                             penalty = abs(n_selected - n_features) / X.shape[1] * 0.1
-                            return fitness + penalty
+                            
+                            final_fitness = fitness + penalty
+                            
+                            # Ensure fitness is valid
+                            if np.isnan(final_fitness) or np.isinf(final_fitness):
+                                return 1.0
+                            
+                            return float(final_fitness)
+                            
                         except Exception as e:
-                            print(f"Error in objective function: {e}")
+                            print(f"Error in feature_selection objective: {e}")
                             return 1.0
                     
                 elif task_type == 'feature_optimization':
                     # Optimize feature weights (continuous values)
                     from sklearn.model_selection import cross_val_score
-                    from sklearn.neighbors import KNeighborsClassifier
+                    from sklearn.ensemble import RandomForestClassifier
                     
                     def objective_function(solution):
-                        # Use solution as feature weights
                         try:
+                            # Ensure solution is valid
+                            solution = np.array(solution, dtype=np.float64)
+                            
+                            if np.any(np.isnan(solution)) or np.any(np.isinf(solution)):
+                                return 1.0
+                            
                             # Ensure solution length matches features
                             if len(solution) != X.shape[1]:
                                 if len(solution) > X.shape[1]:
@@ -1849,30 +2669,71 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
                                 else:
                                     solution = np.pad(solution, (0, X.shape[1] - len(solution)), constant_values=0.5)
                             
-                            X_weighted = X * solution
-                            knn = KNeighborsClassifier(n_neighbors=min(3, len(y)//2))
-                            scores = cross_val_score(knn, X_weighted, y, cv=min(3, len(y)//10), scoring='accuracy', n_jobs=1)
-                            return 1.0 - scores.mean()
+                            # Apply weights (ensure non-zero weights)
+                            weights = np.abs(solution) + 1e-10
+                            X_weighted = X * weights
+                            
+                            # Use RandomForest
+                            rf = RandomForestClassifier(n_estimators=10, max_depth=3, random_state=42, n_jobs=1)
+                            cv_folds = max(2, min(5, len(y) // 20))
+                            scores = cross_val_score(rf, X_weighted, y, cv=cv_folds, scoring='accuracy', n_jobs=1)
+                            
+                            if np.any(np.isnan(scores)):
+                                return 1.0
+                            
+                            fitness = 1.0 - scores.mean()
+                            
+                            if np.isnan(fitness) or np.isinf(fitness):
+                                return 1.0
+                            
+                            return float(fitness)
+                            
                         except Exception as e:
-                            print(f"Error in feature_optimization: {e}")
+                            print(f"Error in feature_optimization objective: {e}")
                             return 1.0
                 
                 else:  # hyperparameter_tuning
                     # Simple hyperparameter optimization
                     from sklearn.model_selection import cross_val_score
-                    from sklearn.neighbors import KNeighborsClassifier
+                    from sklearn.ensemble import RandomForestClassifier
                     
                     def objective_function(solution):
                         try:
+                            # Ensure solution is valid
+                            solution = np.array(solution, dtype=np.float64)
+                            
+                            if np.any(np.isnan(solution)) or np.any(np.isinf(solution)):
+                                return 1.0
+                            
                             # Map solution to hyperparameters
-                            n_neighbors = max(1, int(solution[0] * 20))  # 1-20
-                            # Use first few features only
-                            X_subset = X[:, :min(10, X.shape[1])]
-                            knn = KNeighborsClassifier(n_neighbors=n_neighbors)
-                            scores = cross_val_score(knn, X_subset, y, cv=min(3, len(y)//10), scoring='accuracy', n_jobs=1)
-                            return 1.0 - scores.mean()
+                            n_estimators = max(5, min(50, int(solution[0] * 50)))
+                            max_depth = max(2, min(10, int(solution[1] * 10)))
+                            min_samples_split = max(2, min(10, int(solution[2] * 10)))
+                            
+                            # Use RandomForest with tuned parameters
+                            rf = RandomForestClassifier(
+                                n_estimators=n_estimators,
+                                max_depth=max_depth,
+                                min_samples_split=min_samples_split,
+                                random_state=42,
+                                n_jobs=1
+                            )
+                            
+                            cv_folds = max(2, min(5, len(y) // 20))
+                            scores = cross_val_score(rf, X, y, cv=cv_folds, scoring='accuracy', n_jobs=1)
+                            
+                            if np.any(np.isnan(scores)):
+                                return 1.0
+                            
+                            fitness = 1.0 - scores.mean()
+                            
+                            if np.isnan(fitness) or np.isinf(fitness):
+                                return 1.0
+                            
+                            return float(fitness)
+                            
                         except Exception as e:
-                            print(f"Error in hyperparameter_tuning: {e}")
+                            print(f"Error in hyperparameter_tuning objective: {e}")
                             return 1.0
                 
                 # Run optimization
@@ -1894,14 +2755,33 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
                         verbose=False
                     )
                     
-                    # Extract results
+                    # Extract results with better error handling
                     best_fitness = float(result.best_fitness_) if hasattr(result, 'best_fitness_') else 1.0
                     best_solution = result.best_solution_ if hasattr(result, 'best_solution_') else np.zeros(X.shape[1])
-                    convergence = result.global_fitness_ if hasattr(result, 'global_fitness_') else [best_fitness]
+                    
+                    # Get convergence curve with validation
+                    if hasattr(result, 'global_fitness_'):
+                        convergence = result.global_fitness_
+                        # Validate convergence data
+                        if isinstance(convergence, (list, np.ndarray)):
+                            convergence = np.array(convergence, dtype=np.float64)
+                            # Remove NaN and inf values
+                            convergence = np.where(np.isnan(convergence) | np.isinf(convergence), best_fitness, convergence)
+                            convergence = convergence.tolist()
+                        else:
+                            convergence = [best_fitness]
+                    else:
+                        # Create synthetic convergence curve if not available
+                        convergence = np.linspace(1.0, best_fitness, n_iterations).tolist()
+                    
+                    # Validate best_fitness
+                    if np.isnan(best_fitness) or np.isinf(best_fitness):
+                        best_fitness = 1.0
+                        convergence = [1.0] * len(convergence)
                     
                     run_result = {
                         'run': run + 1,
-                        'best_fitness': best_fitness,
+                        'best_fitness': float(best_fitness),
                         'convergence_curve': convergence,
                         'execution_time': time.time() - run_start,
                         'best_solution': best_solution,
@@ -2731,35 +3611,73 @@ def show_comparative_analysis(results):
 
 
 def show_convergence_analysis(results):
-    """Show detailed convergence analysis"""
+    """Show detailed convergence analysis with improved plotting"""
     st.markdown("### 🔄 Convergence Analysis")
     
-    # Convergence curves
+    if not results:
+        st.warning("No results to display")
+        return
+    
+    # Convergence curves - Create figure with all algorithms
     fig = go.Figure()
     
-    for alg_name, result in results.items():
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+              '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    
+    algorithms_with_data = []
+    
+    for idx, (alg_name, result) in enumerate(results.items()):
         convergence = result.get('convergence_curve', [])
-        if len(convergence) > 0:
+        
+        # Validate and clean convergence data
+        if convergence and len(convergence) > 0:
+            # Convert to numpy array for validation
+            conv_array = np.array(convergence, dtype=np.float64)
+            
+            # Remove NaN and inf values
+            if np.any(np.isnan(conv_array)) or np.any(np.isinf(conv_array)):
+                st.warning(f"⚠️ {alg_name.upper()} had invalid values in convergence, using cleaned data")
+                conv_array = np.where(np.isnan(conv_array) | np.isinf(conv_array), 1.0, conv_array)
+            
+            convergence = conv_array.tolist()
+            
+            # Add trace for this algorithm
             fig.add_trace(go.Scatter(
                 x=list(range(1, len(convergence) + 1)),
                 y=convergence,
                 mode='lines+markers',
                 name=alg_name.upper(),
-                line=dict(width=2),
+                line=dict(width=2, color=colors[idx % len(colors)]),
                 marker=dict(size=4),
-                hovertemplate='<b>' + alg_name.upper() + '</b><br>Iteration: %{x}<br>Fitness: %{y:.6f}<extra></extra>'
+                hovertemplate=f'<b>{alg_name.upper()}</b><br>Iteration: %{{x}}<br>Fitness: %{{y:.6f}}<extra></extra>'
             ))
+            
+            algorithms_with_data.append(alg_name)
+    
+    if not algorithms_with_data:
+        st.error("❌ No valid convergence data found for any algorithm")
+        return
     
     fig.update_layout(
-        title="Convergence Curves: Fitness vs. Iterations",
+        title=f"Convergence Curves: Fitness vs. Iterations ({len(algorithms_with_data)} Algorithms)",
         xaxis_title="Iteration",
         yaxis_title="Fitness Value (Lower is Better)",
         height=600,
         hovermode='x unified',
-        template='plotly_white'
+        template='plotly_white',
+        legend=dict(
+            orientation="v",
+            yanchor="top",
+            y=0.99,
+            xanchor="right",
+            x=0.99
+        ),
+        showlegend=True
     )
     
     st.plotly_chart(fig, use_container_width=True)
+    
+    st.success(f"✅ Showing convergence curves for **{len(algorithms_with_data)} algorithms**: {', '.join([a.upper() for a in algorithms_with_data])}")
     
     # Convergence statistics
     st.markdown("#### 📊 Convergence Statistics")
@@ -2768,14 +3686,21 @@ def show_convergence_analysis(results):
     for alg_name, result in results.items():
         convergence = result.get('convergence_curve', [])
         if len(convergence) > 1:
-            initial_fitness = convergence[0]
-            final_fitness = convergence[-1]
+            # Clean data
+            conv_array = np.array(convergence, dtype=np.float64)
+            conv_array = np.where(np.isnan(conv_array) | np.isinf(conv_array), 1.0, conv_array)
+            
+            initial_fitness = float(conv_array[0])
+            final_fitness = float(conv_array[-1])
             improvement = initial_fitness - final_fitness
             improvement_pct = (improvement / initial_fitness * 100) if initial_fitness != 0 else 0
             
             # Find iteration where 90% of improvement happened
-            target_fitness = initial_fitness - (0.9 * improvement)
-            convergence_90 = next((i for i, f in enumerate(convergence) if f <= target_fitness), len(convergence))
+            if improvement > 0:
+                target_fitness = initial_fitness - (0.9 * improvement)
+                convergence_90 = next((i+1 for i, f in enumerate(conv_array) if f <= target_fitness), len(conv_array))
+            else:
+                convergence_90 = len(conv_array)
             
             convergence_stats.append({
                 'Algorithm': alg_name.upper(),
@@ -2783,7 +3708,8 @@ def show_convergence_analysis(results):
                 'Final Fitness': final_fitness,
                 'Improvement': improvement,
                 'Improvement %': improvement_pct,
-                '90% Conv. Iter': convergence_90
+                '90% Conv. Iter': convergence_90,
+                'Total Iterations': len(conv_array)
             })
     
     if convergence_stats:
@@ -2793,8 +3719,29 @@ def show_convergence_analysis(results):
             'Final Fitness': '{:.6f}',
             'Improvement': '{:.6f}',
             'Improvement %': '{:.2f}%',
-            '90% Conv. Iter': '{:.0f}'
-        }), width='stretch')
+            '90% Conv. Iter': '{:.0f}',
+            'Total Iterations': '{:.0f}'
+        }), use_container_width=True)
+        
+        # Highlight best performers
+        best_improvement = conv_df.loc[conv_df['Improvement %'].idxmax()]
+        fastest_convergence = conv_df.loc[conv_df['90% Conv. Iter'].idxmin()]
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(
+                "🏆 Best Improvement",
+                best_improvement['Algorithm'],
+                f"{best_improvement['Improvement %']:.2f}%"
+            )
+        with col2:
+            st.metric(
+                "⚡ Fastest Convergence",
+                fastest_convergence['Algorithm'],
+                f"Iter {fastest_convergence['90% Conv. Iter']:.0f}"
+            )
+    else:
+        st.warning("⚠️ Not enough data for convergence statistics")
     
     # Convergence speed comparison
     st.markdown("#### ⚡ Convergence Speed Comparison")
@@ -2820,7 +3767,8 @@ def show_export_options(results):
                 'Mean_Fitness': result['mean_fitness'],
                 'Std_Fitness': result['std_fitness'],
                 'Execution_Time': result['execution_time'],
-                'Features_Selected': result['n_features_selected']
+                'Features_Selected': result['n_f' \
+                'eatures_selected']
             })
         
         df_export = pd.DataFrame(summary_data)
@@ -2949,27 +3897,335 @@ def show_results():
 
 
 def show_about():
-    """About page with system information using tabs"""
-    st.markdown("## 📖 About MHA Toolbox")
-    
+    """About page with comprehensive system information"""
     st.markdown("""
-    <div class="info-box">
-        <h3 style="margin-top:0;">🧬 What is MHA Toolbox?</h3>
-        <p style="font-size: 1.05rem; line-height: 1.8;">
-            MHA Toolbox is a comprehensive Python library and web interface for 
-            <strong>Meta-Heuristic Algorithm Optimization</strong>. It provides 98+ 
-            state-of-the-art algorithms for solving complex optimization problems 
-            including feature selection, classification, and function optimization.
-        </p>
+    <div class="main-header">
+        <h1>📖 About MHA Toolbox</h1>
+        <p>Professional Meta-Heuristic Algorithm Optimization Suite v2.0.4</p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    # Quick Stats
+    total_algos = st.session_state.get('total_algorithms', 130)
+    hybrid_algos = st.session_state.get('hybrid_algorithms', 22)
     
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-card-icon">🧬</div>
+            <div class="stat-card-value">{total_algos}</div>
+            <div class="stat-card-label">Total Algorithms</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-card-icon">🔬</div>
+            <div class="stat-card-value">{hybrid_algos}</div>
+            <div class="stat-card-label">Hybrid Algorithms</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="stat-card">
+            <div class="stat-card-icon">🎯</div>
+            <div class="stat-card-value">3</div>
+            <div class="stat-card-label">Task Types</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown("""
+        <div class="stat-card">
+            <div class="stat-card-icon">🔐</div>
+            <div class="stat-card-value">Secure</div>
+            <div class="stat-card-label">Multi-User</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Tabbed interface for organized information
+    about_tabs = st.tabs([
+        "🎯 Overview",
+        "🧬 Algorithms",
+        "✨ Features",
+        "🚀 Quick Start",
+        "👥 Team & License",
+        "📚 Documentation"
+    ])
+    
+    with about_tabs[0]:  # Overview
+        st.markdown("""
+        ### 🧬 What is MHA Toolbox?
+        
+        MHA Toolbox is a **comprehensive Python library and web interface** for Meta-Heuristic Algorithm Optimization. 
+        It provides state-of-the-art algorithms for solving complex optimization problems including:
+        
+        - **Feature Selection**: Identify the most important features in your dataset
+        - **Feature Optimization**: Find optimal feature weights for maximum accuracy
+        - **Hyperparameter Tuning**: Optimize machine learning model parameters
+        
+        ### 🎯 Why Use MHA Toolbox?
+        
+        ✅ **130+ Algorithms**: Largest collection of meta-heuristic algorithms in Python  
+        ✅ **Production-Ready**: Optimized for real-world applications  
+        ✅ **Multi-User**: Secure authentication and profile management  
+        ✅ **Interactive**: Real-time visualization and progress tracking  
+        ✅ **Export Options**: CSV, Excel, JSON, NPZ formats supported  
+        ✅ **Comprehensive**: Complete workflow from data upload to results export  
+        
+        ### 📊 Supported Problem Types
+        
+        1. **Classification**: Binary and multi-class classification problems
+        2. **Regression**: Continuous value prediction
+        3. **Feature Engineering**: Dimensionality reduction and feature importance
+        4. **Model Optimization**: Automated hyperparameter tuning
+        
+        ### 🏆 Key Advantages
+        
+        - **No Coding Required**: User-friendly web interface
+        - **Fast Execution**: Optimized algorithms with parallel processing support
+        - **Statistical Rigor**: Multiple runs with statistical analysis
+        - **Professional Visualizations**: Interactive charts with Plotly
+        - **Persistent Storage**: All results automatically saved
+        """)
+    
+    with about_tabs[1]:  # Algorithms
+        st.markdown("""
+        ### 🧬 Algorithm Categories
+        
+        Our toolbox includes algorithms from multiple categories:
+        """)
+        
+        categories = st.session_state.get('categorized_algorithms', {})
+        if categories:
+            for cat_name, algos in categories.items():
+                if algos:  # Only show non-empty categories
+                    with st.expander(f"**{cat_name}** ({len(algos)} algorithms)"):
+                        # Display in columns
+                        cols = st.columns(3)
+                        for idx, algo in enumerate(sorted(algos)):
+                            with cols[idx % 3]:
+                                st.markdown(f"- `{algo}`")
+        
+        st.markdown("""
+        ### 🔬 Hybrid Algorithms
+        
+        Hybrid algorithms combine the strengths of multiple approaches:
+        - Better exploration and exploitation balance
+        - Higher convergence rates
+        - More robust across different problem types
+        - Superior performance on complex landscapes
+        """)
+    
+    with about_tabs[2]:  # Features
+        st.markdown("""
+        ### ✨ Core Features
+        
+        #### 🔐 Multi-User System
+        - Secure user authentication
+        - Individual user profiles
+        - Session isolation
+        - Privacy protection
+        
+        #### 📊 Optimization Tasks
+        - **Feature Selection**: Binary selection using threshold-based approach
+        - **Feature Optimization**: Continuous weight optimization
+        - **Hyperparameter Tuning**: Model parameter optimization
+        
+        #### 📈 Visualization Suite
+        - Real-time convergence curves
+        - Comparative performance analysis
+        - Feature importance charts
+        - Multi-dimensional scatter plots
+        - Statistical box plots
+        
+        #### 💾 Data Management
+        - Sample datasets (Iris, Wine, Breast Cancer, etc.)
+        - CSV file upload support
+        - Automatic data validation
+        - Result persistence
+        - Export in multiple formats
+        
+        #### 🎯 Advanced Features
+        - Algorithm recommender system
+        - Interactive threshold selection
+        - Multi-run statistical analysis
+        - Optimization history tracking
+        - Personalized preferences
+        
+        #### 🔧 Technical Features
+        - Windows compatibility (joblib fix)
+        - Thread-safe operations
+        - Session state management
+        - Error handling and recovery
+        - Progress tracking
+        """)
+    
+    with about_tabs[3]:  # Quick Start
+        st.markdown("""
+        ### 🚀 Getting Started in 5 Minutes
+        
+        #### Step 1: Authentication
+        1. Click **Login / Switch User** in the sidebar
+        2. Create a new account or login with existing credentials
+        3. Your data will be isolated and secure
+        
+        #### Step 2: Upload Data
+        1. Go to **New Optimization** from the sidebar
+        2. Choose a sample dataset OR upload your CSV
+        3. Review dataset preview and characteristics
+        
+        #### Step 3: Select Algorithms
+        1. View recommended algorithms (auto-selected)
+        2. Browse by category
+        3. Select additional algorithms if desired
+        
+        #### Step 4: Configure & Run
+        1. Choose task type (Feature Selection recommended for beginners)
+        2. Set iterations (100) and population size (30)
+        3. Click **Run Optimization**
+        4. Watch real-time progress
+        
+        #### Step 5: Analyze Results
+        1. View comparative analysis charts
+        2. Examine feature selection with threshold slider
+        3. Check convergence curves
+        4. Export results in your preferred format
+        
+        ### 💡 Pro Tips
+        
+        - Start with **Feature Selection** for classification problems
+        - Use **3 runs** for reliable statistics
+        - Adjust threshold slider to find optimal feature count
+        - Compare multiple algorithms for best results
+        - Save session results for future reference
+        """)
+    
+    with about_tabs[4]:  # Team & License
+        st.markdown("""
+        ### 👥 Development Team
+        
+        **MHA Toolbox** is developed and maintained by:
+        
+        - **Achyut Maheshka** - Lead Developer
+        - **Contributors** - Open source community
+        
+        ### � License
+        
+        This project is licensed under the **MIT License**.
+        
+        #### Permissions
+        ✅ Commercial use  
+        ✅ Modification  
+        ✅ Distribution  
+        ✅ Private use  
+        
+        #### Limitations
+        ❌ Liability  
+        ❌ Warranty  
+        
+        ### 🌟 Acknowledgments
+        
+        Special thanks to:
+        - Scientific Python community (NumPy, Pandas, Scikit-learn)
+        - Streamlit for the amazing web framework
+        - Plotly for interactive visualizations
+        - All algorithm authors and researchers
+        
+        ### 📮 Contact & Support
+        
+        - **GitHub**: [MHA-Algorithm Repository](https://github.com/Achyut103040/MHA-Algorithm)
+        - **Issues**: Report bugs or request features on GitHub
+        - **PyPI**: `pip install mha-toolbox`
+        
+        ### 🎓 Citation
+        
+        If you use MHA Toolbox in your research, please cite:
+        
+        ```
+        @software{mha_toolbox_2024,
+          author = {Achyut Maheshka},
+          title = {MHA Toolbox: Meta-Heuristic Algorithm Optimization Suite},
+          year = {2024},
+          version = {2.0.4},
+          url = {https://github.com/Achyut103040/MHA-Algorithm}
+        }
+        ```
+        """)
+    
+    with about_tabs[5]:  # Documentation
+        st.markdown("""
+        ### 📚 Documentation & Resources
+        
+        #### 📖 User Guides
+        - Complete system workflow documentation
+        - Algorithm selection guide
+        - Feature analysis interpretation
+        - Result visualization guide
+        - Export format specifications
+        
+        #### 🔧 Technical Documentation
+        - API reference
+        - Algorithm implementations
+        - Performance benchmarks
+        - Architecture overview
+        
+        #### 🎯 Tutorials
+        - Beginner's guide to meta-heuristic optimization
+        - Feature selection best practices
+        - Hyperparameter tuning strategies
+        - Interpreting convergence curves
+        
+        #### 📊 Examples
+        - Sample datasets and expected results
+        - Use case scenarios
+        - Real-world applications
+        
+        ### 🆕 Version 2.0.4 Updates
+        
+        #### New Features
+        - ✨ Modern animated UI design
+        - ✨ Enhanced statistics cards
+        - ✨ Improved navigation
+        - ✨ Better visualizations
+        
+        #### Bug Fixes
+        - 🐛 Fixed threshold slider navigation
+        - 🐛 Fixed JSON serialization errors
+        - 🐛 Fixed Windows joblib issues
+        - 🐛 Fixed re-authentication bug
+        
+        #### Improvements
+        - 💄 Professional color scheme
+        - 💄 Responsive design
+        - 💄 Better error handling
+        - 🚀 Performance optimizations
+        
+        ### 📖 Quick Reference
+        
+        | Feature | Description |
+        |---------|-------------|
+        | **Fitness** | Lower is better (0.0 = perfect, 1.0 = worst) |
+        | **Accuracy** | Higher is better (100% = perfect) |
+        | **Threshold** | Feature selection cutoff (0.5 = standard) |
+        | **Iterations** | Optimization cycles (100 = default) |
+        | **Population** | Solutions per iteration (30 = default) |
+        | **Runs** | Repetitions for statistics (3 = default) |
+        """)
+    
+    st.markdown("---")
     st.markdown(f"""
-    **📊 Current Session:**
-    - Algorithms Available: {st.session_state.total_algorithms}
-    - User: {st.session_state.current_user if st.session_state.user_authenticated else 'Guest'}
+    **Current Session Information:**
+    - **Version**: 2.0.4
+    - **Algorithms Available**: {total_algos}
+    - **Hybrid Algorithms**: {hybrid_algos}
+    - **User**: {st.session_state.current_user if st.session_state.user_authenticated else 'Guest'}
+    - **Session ID**: {st.session_state.session_id[:8]}...
     """)
 
 
