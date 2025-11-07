@@ -357,11 +357,19 @@ def show_user_switcher():
         st.sidebar.markdown(f'<div class="user-badge">👤 {current_user}</div>', unsafe_allow_html=True)
         
         # Logout button
-        if st.sidebar.button("🚪 Logout", width='stretch'):
+        if st.sidebar.button("🚪 Logout", key="logout_btn"):
+            # Clear all authentication-related session state
             st.session_state.user_authenticated = False
             st.session_state.current_user = None
             st.session_state.user_profile = None
             st.session_state.user_password = None
+            if 'auth_cache' in st.session_state:
+                st.session_state.auth_cache.clear()
+            # Clear any cached keys
+            if 'login_password' in st.session_state:
+                del st.session_state['login_password']
+            if 'login_select' in st.session_state:
+                del st.session_state['login_select']
             st.success("✅ Logged out successfully")
             st.rerun()
     else:
@@ -485,13 +493,23 @@ def show_user_switcher():
 
 
 def authenticate_user(username, password):
-    """Authenticate user with password"""
+    """Authenticate user with password - FIXED VERSION"""
     try:
         import hashlib
         import platform
         
-        # Try loading persistent profile first
-        profile = load_profile(username, system_id=platform.node(), session_id=None)
+        # Clear any cached data to prevent stale state
+        if 'auth_cache' not in st.session_state:
+            st.session_state.auth_cache = {}
+        
+        # Try loading persistent profile first (without session_id)
+        profile = None
+        
+        # Try from current system
+        try:
+            profile = load_profile(username, system_id=platform.node(), session_id=None)
+        except:
+            pass
         
         if not profile:
             # Try loading from any system (for cross-system compatibility)
@@ -499,27 +517,121 @@ def authenticate_user(username, password):
             matching = [p for p in all_profiles if p['username'] == username]
             if matching:
                 # Load using the stored system_id
-                profile = load_profile(username, system_id=matching[0].get('system_id', platform.node()), session_id=None)
+                try:
+                    profile = load_profile(username, 
+                                         system_id=matching[0].get('system_id', platform.node()), 
+                                         session_id=None)
+                except:
+                    pass
         
         if profile:
             stored_hash = profile.preferences.get('password_hash', '')
-            input_hash = hashlib.sha256(password.encode()).hexdigest()
             
             if not stored_hash:
                 # No password set - this shouldn't happen for valid users
-                st.warning(f"⚠️ Profile found but no password set. Please re-register.")
+                st.warning(f"⚠️ Profile found but no password set for '{username}'. Please create a new account.")
                 return False
             
-            return stored_hash == input_hash
+            # Hash the input password
+            input_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Compare hashes
+            is_valid = (stored_hash == input_hash)
+            
+            if is_valid:
+                # Cache successful authentication
+                st.session_state.auth_cache[username] = True
+            
+            return is_valid
         else:
             st.error(f"❌ User '{username}' not found. Please check username or create a new account.")
+        
         return False
+        
     except Exception as e:
         st.error(f"Authentication error: {e}")
         import traceback
         traceback.print_exc()
         return False
-        return False
+
+
+def convert_to_json_serializable(obj):
+    """Convert numpy types to Python native types for JSON serialization"""
+    import numpy as np
+    
+    if isinstance(obj, (np.int32, np.int64, np.int_)):
+        return int(obj)
+    elif isinstance(obj, (np.float32, np.float64, np.float_)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_to_json_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_json_serializable(item) for item in obj]
+    else:
+        return obj
+
+
+def save_to_user_history(results, total_time, algorithms, n_runs, task_type):
+    """Save optimization results to user's history"""
+    try:
+        if not st.session_state.user_profile:
+            return
+        
+        from datetime import datetime
+        import json
+        
+        # Create history entry with JSON-safe values
+        history_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'algorithms': algorithms,
+            'n_runs': int(n_runs),
+            'task_type': task_type,
+            'total_time': float(total_time),
+            'dataset': st.session_state.current_data.get('name', 'Unknown') if st.session_state.current_data else 'Custom',
+            'best_algorithm': min(results.items(), key=lambda x: x[1].get('best_fitness', 1.0))[0] if results else None,
+            'best_fitness': float(min(results.values(), key=lambda x: x.get('best_fitness', 1.0)).get('best_fitness', 1.0)) if results else 1.0,
+            'algorithms_tested': int(len(algorithms)),
+            'results_summary': {
+                algo: {
+                    'best_fitness': float(res.get('best_fitness', 1.0)),
+                    'mean_fitness': float(res.get('mean_fitness', 1.0)),
+                    'execution_time': float(res.get('execution_time', 0)),
+                    'n_features_selected': int(res.get('n_features_selected', 0))
+                }
+                for algo, res in results.items() if 'error' not in res
+            }
+        }
+        
+        # Convert all values to JSON-serializable types
+        history_entry = convert_to_json_serializable(history_entry)
+        
+        # Save to profile's history
+        if 'optimization_history' not in st.session_state.user_profile.preferences:
+            st.session_state.user_profile.preferences['optimization_history'] = []
+        
+        # Limit history to last 100 entries
+        history = st.session_state.user_profile.preferences['optimization_history']
+        history.append(history_entry)
+        if len(history) > 100:
+            history = history[-100:]  # Keep only last 100
+        
+        st.session_state.user_profile.preferences['optimization_history'] = history
+        
+        # Update profile statistics
+        st.session_state.user_profile.increment_experiments()
+        st.session_state.user_profile.update_preference('last_optimization', datetime.now().isoformat())
+        st.session_state.user_profile.update_preference('total_algorithms_tested', 
+            st.session_state.user_profile.preferences.get('total_algorithms_tested', 0) + len(algorithms))
+        
+        # Save profile
+        save_profile(st.session_state.user_profile)
+        
+    except Exception as e:
+        print(f"Error saving to user history: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 def show_disclaimer():
@@ -676,7 +788,8 @@ def main():
         pages = [
             "🏠 Home",
             "🚀 New Optimization",
-            "📊 Results",
+            "� History",
+            "�📊 Results",
             "📖 About",
             "⚙️ Settings"
         ]
@@ -714,7 +827,9 @@ def main():
         show_home()
     elif st.session_state.current_page == "🚀 New Optimization":
         show_optimization()
-    elif st.session_state.current_page == "📊 Results":
+    elif st.session_state.current_page == "� History":
+        show_history()
+    elif st.session_state.current_page == "�📊 Results":
         show_results()
     elif st.session_state.current_page == "📖 About":
         show_about()
@@ -1639,6 +1754,12 @@ def show_optimization():
 def run_optimization(algorithms, n_iterations, population_size, n_features, 
                     task_type='feature_selection', n_runs=3, enable_tracking=True):
     """Run optimization with comprehensive tracking like web interface"""
+    
+    # Disable joblib parallel processing to avoid Windows CreateProcess errors
+    import os
+    os.environ['LOKY_MAX_CPU_COUNT'] = '1'
+    os.environ['OMP_NUM_THREADS'] = '1'
+    
     X = st.session_state.current_data['X']
     y = st.session_state.current_data['y']
     
@@ -1756,6 +1877,10 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
                 
                 # Run optimization
                 try:
+                    # Disable joblib parallel processing to avoid Windows CreateProcess errors
+                    import os
+                    os.environ['LOKY_MAX_CPU_COUNT'] = '1'  # Force joblib to use single core
+                    
                     # MHAToolbox.optimize() expects: algorithm_name, then either (X, y) or (objective_function)
                     # We'll use objective_function approach since we need custom fitness calculation
                     result = toolbox.optimize(
@@ -1870,6 +1995,10 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
     
     total_time = time.time() - start_time
     st.session_state.optimization_results = results
+    
+    # Save to user history if logged in
+    if st.session_state.user_authenticated and st.session_state.user_profile:
+        save_to_user_history(results, total_time, algorithms, n_runs, task_type)
     
     progress_bar.empty()
     status_text.empty()
@@ -2040,6 +2169,15 @@ def show_feature_analysis(results):
     """Show feature selection analysis with interactive threshold"""
     st.markdown("### 🎯 Feature Selection Analysis")
     
+    # Safety check: Ensure we have required data
+    if not results:
+        st.warning("⚠️ No results available for feature analysis.")
+        return
+    
+    if 'current_data' not in st.session_state or st.session_state.current_data is None:
+        st.warning("⚠️ Dataset not available. Please run optimization again.")
+        return
+    
     st.info("""
     **💡 Understanding Feature Importance:**
     
@@ -2051,12 +2189,21 @@ def show_feature_analysis(results):
     - **Threshold < 0.5** (e.g., 0.25): Low selectivity - includes features that contributed sometimes
     - **Threshold = 0.0**: Shows all features with any contribution
     
-    🟢 **Green bars** = Selected (≥ threshold) | ⚪ **Gray bars** = Not selected (< threshold)
+    **🎨 Enhanced Color Coding:**
+    - 🟢 **Dark Green**: Very important features (≥ threshold + 0.2)
+    - 🟢 **Green**: Important features (≥ threshold)
+    - 🟠 **Orange**: Borderline features (threshold - 0.1 to threshold)
+    - 🟠 **Dark Orange**: Moderately low (threshold - 0.2 to threshold - 0.1)
+    - ⚪ **Gray**: Not important features (< threshold - 0.2)
     """)
     
     # Get best algorithm's solution
-    best_algo = min(results.items(), key=lambda x: x[1]['best_fitness'])
-    best_solution = best_algo[1].get('best_solution', [])
+    try:
+        best_algo = min(results.items(), key=lambda x: x[1]['best_fitness'])
+        best_solution = best_algo[1].get('best_solution', [])
+    except Exception as e:
+        st.error(f"Error processing results: {e}")
+        return
     
     if len(best_solution) > 0:
         st.markdown(f"#### 🏆 Features from Best Algorithm: **{best_algo[0].upper()}**")
@@ -2080,25 +2227,47 @@ def show_feature_analysis(results):
         col1, col2 = st.columns([3, 1])
         
         with col1:
+            # Use session state to preserve threshold value
+            if 'feature_threshold' not in st.session_state:
+                st.session_state.feature_threshold = 0.5
+            
             threshold = st.slider(
                 "Feature Selection Threshold",
                 min_value=0.0,
                 max_value=1.0,
-                value=0.5,
+                value=st.session_state.feature_threshold,
                 step=0.05,
-                key="feature_threshold_slider",  # Add unique key
-                help="Adjust to control feature selection sensitivity. Higher = more selective."
+                key="feature_threshold_slider",
+                help="Adjust to control feature selection sensitivity. Higher = more selective.",
+                on_change=lambda: setattr(st.session_state, 'feature_threshold', st.session_state.feature_threshold_slider)
             )
+            
+            # Update session state
+            st.session_state.feature_threshold = threshold
         
         with col2:
             # Show selection count at current threshold
             selected_count = sum(1 for val in best_solution if val >= threshold)
             st.metric("Features Selected", f"{selected_count}/{n_features}")
         
-        # Create dynamic bar chart based on threshold
+        # Create dynamic bar chart based on threshold with enhanced color coding
         import plotly.graph_objects as go
         
-        colors = ['#2ECC71' if val >= threshold else '#95A5A6' for val in best_solution]
+        # Enhanced color coding: gradient based on distance from threshold
+        def get_feature_color(value, threshold):
+            """Return color based on feature importance relative to threshold"""
+            if value >= threshold + 0.2:
+                return '#27AE60'  # Dark green: Very important (far above threshold)
+            elif value >= threshold:
+                return '#2ECC71'  # Green: Important (above threshold)
+            elif value >= threshold - 0.1:
+                return '#F39C12'  # Orange: Borderline (just below threshold)
+            elif value >= threshold - 0.2:
+                return '#E67E22'  # Dark orange: Moderately low
+            else:
+                return '#95A5A6'  # Gray: Not important (well below threshold)
+        
+        colors = [get_feature_color(val, threshold) for val in best_solution]
         
         fig_features = go.Figure()
         fig_features.add_trace(go.Bar(
@@ -2134,6 +2303,16 @@ def show_feature_analysis(results):
         fig_features.update_xaxes(tickangle=-45)
         
         st.plotly_chart(fig_features, use_container_width=True)
+        
+        # Add color legend
+        st.markdown("""
+        **🎨 Color Legend:**
+        - 🟢 **Dark Green**: Very important (≥ threshold + 0.2)
+        - 🟢 **Green**: Important (≥ threshold)
+        - 🟠 **Orange**: Borderline (threshold - 0.1 to threshold)
+        - 🟠 **Dark Orange**: Moderately low (threshold - 0.2 to threshold - 0.1)
+        - ⚪ **Gray**: Not important (< threshold - 0.2)
+        """)
         
         # Show dynamic statistics based on threshold
         st.markdown(f"#### 📊 Selection Statistics (Threshold: {threshold:.2f})")
@@ -2778,13 +2957,210 @@ def show_about():
         <h3 style="margin-top:0;">🧬 What is MHA Toolbox?</h3>
         <p style="font-size: 1.05rem; line-height: 1.8;">
             MHA Toolbox is a comprehensive Python library and web interface for 
-            <strong>Meta-Heuristic Algorithm Optimization</strong>. It provides 130+ 
+            <strong>Meta-Heuristic Algorithm Optimization</strong>. It provides 98+ 
             state-of-the-art algorithms for solving complex optimization problems 
             including feature selection, classification, and function optimization.
         </p>
     </div>
     """, unsafe_allow_html=True)
     
+    st.markdown("---")
+    
+    st.markdown(f"""
+    **📊 Current Session:**
+    - Algorithms Available: {st.session_state.total_algorithms}
+    - User: {st.session_state.current_user if st.session_state.user_authenticated else 'Guest'}
+    """)
+
+
+def show_history():
+    """User's optimization history page"""
+    st.markdown("## 📜 Optimization History")
+    
+    # Check if user is logged in
+    if not st.session_state.user_authenticated or not st.session_state.user_profile:
+        st.warning("⚠️ Please log in to view your optimization history.")
+        st.markdown("""
+        <div class="info-box">
+            <h3 style="margin-top:0;">🔐 Login Required</h3>
+            <p>The optimization history feature requires a user account.</p>
+            <p><strong>Benefits of creating an account:</strong></p>
+            <ul>
+                <li>📜 Track all your optimization runs</li>
+                <li>📊 View performance statistics and trends</li>
+                <li>🎯 Compare different datasets and algorithms</li>
+                <li>💾 Persistent storage of results</li>
+                <li>⚙️ Personalized settings and preferences</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        return
+    
+    # Get history from user profile
+    history = st.session_state.user_profile.preferences.get('optimization_history', [])
+    
+    if not history:
+        st.info("📭 No optimization history yet. Run your first optimization to start tracking!")
+        st.markdown("""
+        <div class="info-box">
+            <h3 style="margin-top:0;">🚀 Start Optimizing!</h3>
+            <p>Your optimization runs will be automatically saved here.</p>
+            <p><strong>What gets tracked:</strong></p>
+            <ul>
+                <li>⏱️ Timestamp and execution time</li>
+                <li>🧬 Algorithms tested</li>
+                <li>📊 Best fitness achieved</li>
+                <li>📁 Dataset information</li>
+                <li>🎯 Task type (feature selection, optimization, etc.)</li>
+                <li>📈 Complete results summary</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("🚀 Start New Optimization", type="primary", use_container_width=True):
+            st.session_state.current_page = "🚀 New Optimization"
+            st.rerun()
+        return
+    
+    # Display statistics
+    st.markdown("### 📊 Statistics")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    total_runs = len(history)
+    unique_algorithms = len(set(algo for entry in history for algo in entry.get('algorithms', [])))
+    unique_datasets = len(set(entry.get('dataset', 'Unknown') for entry in history))
+    avg_time = sum(entry.get('total_time', 0) for entry in history) / total_runs if total_runs > 0 else 0
+    
+    with col1:
+        st.metric("Total Runs", total_runs)
+    with col2:
+        st.metric("Algorithms Tested", unique_algorithms)
+    with col3:
+        st.metric("Datasets Used", unique_datasets)
+    with col4:
+        st.metric("Avg Time (s)", f"{avg_time:.2f}")
+    
+    st.markdown("---")
+    
+    # Filters
+    st.markdown("### 🔍 Filters")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # Dataset filter
+        all_datasets = sorted(set(entry.get('dataset', 'Unknown') for entry in history))
+        selected_dataset = st.selectbox(
+            "Dataset",
+            ["All"] + all_datasets,
+            key="history_dataset_filter"
+        )
+    
+    with col2:
+        # Task type filter
+        all_task_types = sorted(set(entry.get('task_type', 'Unknown') for entry in history))
+        selected_task = st.selectbox(
+            "Task Type",
+            ["All"] + all_task_types,
+            key="history_task_filter"
+        )
+    
+    with col3:
+        # Sort by
+        sort_by = st.selectbox(
+            "Sort By",
+            ["Newest First", "Oldest First", "Best Fitness", "Execution Time"],
+            key="history_sort"
+        )
+    
+    # Filter history
+    filtered_history = history.copy()
+    
+    if selected_dataset != "All":
+        filtered_history = [h for h in filtered_history if h.get('dataset') == selected_dataset]
+    
+    if selected_task != "All":
+        filtered_history = [h for h in filtered_history if h.get('task_type') == selected_task]
+    
+    # Sort history
+    if sort_by == "Newest First":
+        filtered_history = sorted(filtered_history, key=lambda x: x.get('timestamp', ''), reverse=True)
+    elif sort_by == "Oldest First":
+        filtered_history = sorted(filtered_history, key=lambda x: x.get('timestamp', ''))
+    elif sort_by == "Best Fitness":
+        filtered_history = sorted(filtered_history, key=lambda x: x.get('best_fitness', float('inf')))
+    elif sort_by == "Execution Time":
+        filtered_history = sorted(filtered_history, key=lambda x: x.get('total_time', 0))
+    
+    st.markdown(f"### 📋 History ({len(filtered_history)} entries)")
+    
+    if not filtered_history:
+        st.info("No entries match the selected filters.")
+        return
+    
+    # Display history entries
+    for idx, entry in enumerate(filtered_history):
+        timestamp = entry.get('timestamp', 'Unknown')
+        try:
+            from datetime import datetime
+            dt = datetime.fromisoformat(timestamp)
+            formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+        except:
+            formatted_time = timestamp
+        
+        algorithms = entry.get('algorithms', [])
+        dataset = entry.get('dataset', 'Unknown')
+        task_type = entry.get('task_type', 'Unknown')
+        best_algo = entry.get('best_algorithm', 'N/A')
+        best_fitness = entry.get('best_fitness', 'N/A')
+        total_time = entry.get('total_time', 0)
+        n_runs = entry.get('n_runs', 1)
+        
+        with st.expander(f"🔬 Run #{len(filtered_history) - idx}: {formatted_time} - {dataset}"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"""
+                **📊 Overview**
+                - **Dataset:** {dataset}
+                - **Task Type:** {task_type}
+                - **Algorithms:** {len(algorithms)}
+                - **Runs per Algorithm:** {n_runs}
+                - **Total Time:** {total_time:.2f}s
+                """)
+            
+            with col2:
+                st.markdown(f"""
+                **🏆 Best Result**
+                - **Algorithm:** {best_algo}
+                - **Fitness:** {best_fitness if isinstance(best_fitness, str) else f'{best_fitness:.6e}'}
+                """)
+            
+            st.markdown("**🧬 Algorithms Tested:**")
+            st.write(", ".join(algorithms))
+            
+            # Results summary
+            results_summary = entry.get('results_summary', {})
+            if results_summary:
+                st.markdown("**📈 Detailed Results:**")
+                
+                # Create a dataframe for easy viewing
+                import pandas as pd
+                results_data = []
+                for algo, res in results_summary.items():
+                    results_data.append({
+                        'Algorithm': algo,
+                        'Best Fitness': res.get('best_fitness', 'N/A'),
+                        'Mean Fitness': res.get('mean_fitness', 'N/A'),
+                        'Execution Time (s)': res.get('execution_time', 'N/A'),
+                        'Features Selected': res.get('n_features_selected', 'N/A')
+                    })
+                
+                if results_data:
+                    df = pd.DataFrame(results_data)
+                    st.dataframe(df, use_container_width=True)
+
+
+def show_settings():
     # Create tabs for organized content
     about_tabs = st.tabs([
         "🔄 System Flow",

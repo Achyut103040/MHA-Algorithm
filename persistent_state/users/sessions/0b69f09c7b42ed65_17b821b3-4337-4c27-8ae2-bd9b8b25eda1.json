@@ -1,16 +1,16 @@
 {
-  "username": "x",
+  "username": "f",
   "system_id": "LAPTOP-0P9VI9T2",
-  "session_id": "dac13897-38a1-436e-b1ba-a74eb4fb8334",
-  "user_id": "008fba49d99c7a02",
-  "created_at": "2025-11-06T19:16:23.050069",
-  "last_active": "2025-11-06T19:16:23.050069",
+  "session_id": "17b821b3-4337-4c27-8ae2-bd9b8b25eda1",
+  "user_id": "0b69f09c7b42ed65",
+  "created_at": "2025-11-07T22:36:13.111809",
+  "last_active": "2025-11-07T22:36:13.114906",
   "total_experiments": 0,
-  "total_sessions": 1,
+  "total_sessions": 0,
   "preferences": {
-    "password_hash": "043a718774c572bd8a25adbeb1bfcd5c0256ae11cecf9f9c3f925d0e52beaf89",
-    "created_system": "LAPTOP-0P9VI9T2",
-    "last_system": null,
+    "password_hash": null,
+    "created_system": null,
+    "last_system": "LAPTOP-0P9VI9T2",
     "system_history": [],
     "mode": "Professional",
     "auto_resume": true,
@@ -35,8 +35,7 @@
     "last_10_algorithms": [],
     "failed_login_attempts": 0,
     "last_login": null,
-    "session_timeout_minutes": 60,
-    "created_at": "2025-11-06T19:16:23.050069"
+    "session_timeout_minutes": 60
   },
   "is_session_based": true
 }
