@@ -8,6 +8,7 @@ scikit-learn>=1.0.0
 scipy>=1.7.0
 joblib>=1.1.0
 tqdm>=4.62.0
+click>=8.0.0
 
 # Web interface dependencies
 streamlit>=1.25.0
