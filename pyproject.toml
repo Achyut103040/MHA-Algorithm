@@ -3,16 +3,16 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mha-toolbox"
+name = "mha-flow"
 dynamic = ["version"]
-description = "Professional Metaheuristic Algorithm Library with 36+ algorithms, hybrid combinations, and comprehensive analysis tools"
+description = "Professional Metaheuristic Algorithm Library with 130+ algorithms, AI-powered recommendations, and modern web interface"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "MHA Development Team", email = "mha.toolbox@gmail.com"},
+    {name = "MHA Flow Development Team", email = "mha.flow@gmail.com"},
 ]
 maintainers = [
-    {name = "MHA Development Team", email = "mha.toolbox@gmail.com"},
+    {name = "MHA Flow Development Team", email = "mha.flow@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -34,7 +34,8 @@ keywords = [
     "metaheuristic", "optimization", "evolutionary-algorithm", 
     "swarm-intelligence", "feature-selection", "machine-learning",
     "artificial-intelligence", "bio-inspired", "physics-based",
-    "hybrid-algorithms", "pso", "gwo", "sca", "woa", "ga", "de"
+    "hybrid-algorithms", "pso", "gwo", "sca", "woa", "ga", "de",
+    "algorithm-recommender", "ai-powered", "data-science", "streamlit"
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -100,8 +101,9 @@ Repository = "https://github.com/Achyut103040/MHA-Algorithm"
 "Bug Tracker" = "https://github.com/Achyut103040/MHA-Algorithm/issues"
 
 [project.scripts]
-mha-toolbox = "mha_toolbox.cli:main"
-mha-web = "mha_toolbox.launcher:launch_web_interface"
+mha-flow = "mha_toolbox.launcher:launch_local_interface"
+mha-flow-web = "mha_toolbox.launcher:launch_online_interface"
+mha-flow-cli = "mha_toolbox.cli:main"
 mha-demo = "mha_toolbox.launcher:run_demo_system"
 
 [tool.setuptools]

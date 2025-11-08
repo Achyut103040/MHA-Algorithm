@@ -1,25 +1,38 @@
-# 🧬 MHA Toolbox - Meta-Heuristic Algorithms Optimization Library
+# 🚀 MHA Flow - Meta-Heuristic Algorithms Optimization Library
 
-**Version 2.0.0** | Production Ready | 125 Algorithms | 22 Hybrids
+**Version 2.0.4** | Production Ready | 130+ Algorithms | AI-Powered Recommendations
 
-A comprehensive Python library for meta-heuristic optimization algorithms with support for feature selection, hyperparameter tuning, and benchmark testing.
+A comprehensive Python library for meta-heuristic optimization algorithms with AI-powered algorithm recommendations, modern web interface, and support for feature selection, hyperparameter tuning, and benchmark testing.
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Web Interface](https://img.shields.io/badge/Web-mha--flow.streamlit.app-brightgreen)](https://mha-flow.streamlit.app/)
+
+---
+
+## ✨ What's New in v2.0.4
+
+- 🤖 **AI-Powered Algorithm Recommender** - Smart recommendations based on dataset characteristics
+- 🎨 **Modern 3-Step Workflow** - Intuitive guided interface
+- 🌐 **Online Web Interface** - Access from anywhere at [mha-flow.streamlit.app](https://mha-flow.streamlit.app/)
+- 📊 **Enhanced Visualizations** - Real-time convergence plots and comparisons
+- 🔐 **Multi-User Authentication** - Personal optimization history tracking
+- 💫 **130+ Algorithms** - Expanded algorithm library with hybrids
 
 ---
 
 ## 📊 Features
 
-- ✅ **125 Meta-Heuristic Algorithms** (103 main + 22 hybrids)
+- ✅ **130+ Meta-Heuristic Algorithms** with hybrid combinations
+- 🤖 **AI-Powered Algorithm Recommendations** based on dataset analysis
 - 🎯 **13 Algorithm Categories** (Swarm, Bio-Inspired, Physics-Based, etc.)
-- 🔧 **3 Usage Modes**: Python Library, Web UI, CLI
+- 🔧 **4 Usage Modes**: Python Library, Web UI, Online Interface, CLI
 - 📈 **Real-Time Visualization** with interactive plots
-- 💾 **Complete Results Saving** (7 key attributes per optimization)
-- 🔄 **Multi-User Session Management**
+- 💾 **Complete Results Saving** with comprehensive analysis
+- 🔄 **Multi-User Session Management** with authentication
 - 📤 **Export Results**: CSV, Excel, JSON, PNG
-- 🤖 **Algorithm Recommender System**
-- 📚 **Comprehensive Documentation**
+- 📚 **Comprehensive Documentation** and examples
+- 🌐 **Access Anywhere** - Online or local deployment
 
 ---
 
@@ -28,32 +41,51 @@ A comprehensive Python library for meta-heuristic optimization algorithms with s
 ### Installation
 
 ```bash
-# Install from source
+# Install from PyPI (recommended)
+pip install mha-flow
+
+# With web interface
+pip install mha-flow[ui]
+
+# Complete installation (all features)
+pip install mha-flow[complete]
+
+# Or install from source
 git clone https://github.com/Achyut103040/MHA-Algorithm.git
 cd MHA-Algorithm
 pip install -e .
-
-# Or install dependencies only
-pip install -r requirements.txt
 ```
 
-### Verify Installation
+### Launch Commands
 
-```python
-python -c "from mha_toolbox import MHAToolbox; print('✅ Installed!')"
+```bash
+# Open online web interface (no local installation needed)
+mha-flow-web
+
+# Launch local web interface
+mha-flow
+
+# Command-line interface
+mha-flow-cli
+
+# Run demo system
+mha-demo
 ```
 
-### Basic Usage
+### Python Library Usage
 
 ```python
-from mha_toolbox import optimize
+from mha_toolbox import MHAToolbox
 from sklearn.datasets import load_iris
 
 # Load data
 X, y = load_iris(return_X_y=True)
 
+# Initialize toolbox
+toolbox = MHAToolbox()
+
 # Run optimization
-result = optimize('pso', X=X, y=y, population_size=30, max_iterations=100)
+result = toolbox.optimize('pso', X=X, y=y, population_size=30, max_iterations=100)
 
 # Access results
 print(f"Best fitness: {result.best_fitness_}")
@@ -61,9 +93,45 @@ print(f"Runtime: {result.execution_time_}s")
 print(f"Best solution: {result.best_solution_}")
 ```
 
+### AI-Powered Recommendations
+
+```python
+from mha_toolbox import AlgorithmRecommender
+
+# Initialize recommender
+recommender = AlgorithmRecommender()
+
+# Get recommendations based on your dataset
+recommendations = recommender.recommend_algorithms(X, y, top_k=5)
+
+for algo, confidence, reason in recommendations:
+    print(f"{algo.upper()}: {confidence:.1f}/10 - {reason}")
+```
+
 ---
 
-## 📦 125 Available Algorithms
+## 🌐 Web Interfaces
+
+### Online Interface (Recommended)
+**No installation required!** Access the full-featured web interface at:
+👉 **[https://mha-flow.streamlit.app/](https://mha-flow.streamlit.app/)**
+
+Features:
+- 🔐 User authentication & history
+- 🤖 AI-powered algorithm recommendations
+- 📊 6 sample datasets included
+- 📈 Real-time visualizations
+- 💾 Export results in multiple formats
+
+### Local Interface
+Run the web interface on your machine:
+```bash
+mha-flow
+```
+
+---
+
+## 📦 130+ Available Algorithms
 
 ### 🐝 Swarm Intelligence (18)
 PSO, GWO, WOA, ACO, ABC, BA, FA, SSA, ALO, MFO, CS, FPA, KH, etc.

@@ -1,11 +1,16 @@
 """
-Setup script for MHA Toolbox - Professional Metaheuristic Algorithm Library v2.0.0
+Setup script for MHA Flow - Professional Metaheuristic Algorithm Library v2.0.6
 
 Installation modes:
-    pip install mha-toolbox              # Core library only
-    pip install mha-toolbox[ui]          # With web interface
-    pip install mha-toolbox[complete]    # Everything
-    pip install mha-toolbox[dev]         # Development tools
+    pip install mha-flow              # Core library only
+    pip install mha-flow[ui]          # With web interface
+    pip install mha-flow[complete]    # Everything
+    pip install mha-flow[dev]         # Development tools
+
+Usage:
+    mha-flow                          # Run local web interface
+    mha-flow-web                      # Open online web interface
+    mha-flow --help                   # Show help
 """
 
 from setuptools import setup, find_packages
@@ -18,16 +23,19 @@ def read_long_description():
         with open("README.md", "r", encoding="utf-8") as fh:
             return fh.read()
     except FileNotFoundError:
-        return "MHA Toolbox - Professional Metaheuristic Algorithm Library with 95+ algorithms"
+        return "MHA Flow - Professional Metaheuristic Algorithm Library with 130+ algorithms"
 
 # Read version from __init__.py
 def get_version():
     """Extract version from __init__.py"""
-    with open("mha_toolbox/__init__.py", "r", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("__version__"):
-                return line.split("=")[1].strip().strip('"').strip("'")
-    return "2.0.0"
+    try:
+        with open("mha_toolbox/__init__.py", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("__version__"):
+                    return line.split("=")[1].strip().strip('"').strip("'")
+    except FileNotFoundError:
+        pass
+    return "2.0.6"
 
 # Core dependencies (required for library usage)
 install_requires = [
@@ -107,11 +115,11 @@ extras_require["complete"] = list(set(
 extras_require["all"] = list(set(sum(extras_require.values(), [])))
 
 setup(
-    name="mha-toolbox",
+    name="mha-flow",
     version=get_version(),
-    author="MHA Development Team",
-    author_email="mha.toolbox@gmail.com",
-    description="Professional Metaheuristic Algorithm Library with 95+ algorithms including swarm, evolutionary, bio-inspired, physics-based, and 9 hybrid combinations",
+    author="MHA Flow Development Team",
+    author_email="mha.flow@gmail.com",
+    description="Professional Metaheuristic Algorithm Library with 130+ algorithms including swarm, evolutionary, bio-inspired, physics-based, and hybrid combinations with AI-powered recommendations",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
     url="https://github.com/Achyut103040/MHA-Algorithm",
@@ -119,6 +127,7 @@ setup(
         "Bug Tracker": "https://github.com/Achyut103040/MHA-Algorithm/issues",
         "Documentation": "https://github.com/Achyut103040/MHA-Algorithm/wiki",
         "Source Code": "https://github.com/Achyut103040/MHA-Algorithm",
+        "Web Interface": "https://mha-flow.streamlit.app/",
     },
     packages=find_packages(),
     classifiers=[
@@ -143,6 +152,7 @@ setup(
     include_package_data=True,
     package_data={
         "mha_toolbox": [
+            "*.py",  # Include all Python files (including mha_ui_complete.py)
             "data/*.csv",
             "data/*.json",
             "templates/*.html",
@@ -152,8 +162,9 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "mha-toolbox=mha_toolbox.cli:main",
-            "mha-web=mha_toolbox.launcher:launch_web_interface",
+            "mha-flow=mha_toolbox.launcher:launch_local_interface",
+            "mha-flow-web=mha_toolbox.launcher:launch_online_interface",
+            "mha-flow-cli=mha_toolbox.cli:main",
             "mha-demo=mha_toolbox.launcher:run_demo_system",
         ],
     },
@@ -161,7 +172,8 @@ setup(
         "metaheuristic", "optimization", "evolutionary-algorithm", 
         "swarm-intelligence", "feature-selection", "machine-learning",
         "artificial-intelligence", "bio-inspired", "physics-based",
-        "hybrid-algorithms", "pso", "gwo", "sca", "woa", "ga", "de"
+        "hybrid-algorithms", "pso", "gwo", "sca", "woa", "ga", "de",
+        "algorithm-recommender", "ai-powered", "data-science"
     ],
     zip_safe=False,
 )

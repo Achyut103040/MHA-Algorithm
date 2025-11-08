@@ -1086,15 +1086,45 @@ def save_to_user_history(results, total_time, algorithms, n_runs, task_type):
         
         from datetime import datetime
         import json
+        import uuid
+        
+        # Generate unique run ID to prevent overwriting
+        run_id = str(uuid.uuid4())
+        
+        # Get comprehensive dataset metadata
+        dataset_info = {
+            'name': 'Unknown',
+            'n_samples': 0,
+            'n_features': 0,
+            'n_classes': 0,
+            'target_names': [],
+            'feature_names': []
+        }
+        
+        if st.session_state.current_data:
+            dataset_info['name'] = st.session_state.current_data.get('name', 'Custom')
+            if 'X' in st.session_state.current_data:
+                X = st.session_state.current_data['X']
+                dataset_info['n_samples'] = int(X.shape[0])
+                dataset_info['n_features'] = int(X.shape[1])
+            if 'y' in st.session_state.current_data:
+                y = st.session_state.current_data['y']
+                dataset_info['n_classes'] = int(len(np.unique(y)))
+            if 'target_names' in st.session_state.current_data:
+                dataset_info['target_names'] = [str(t) for t in st.session_state.current_data['target_names']]
+            if 'feature_names' in st.session_state.current_data:
+                dataset_info['feature_names'] = [str(f) for f in st.session_state.current_data['feature_names']]
         
         # Create history entry with JSON-safe values
         history_entry = {
+            'run_id': run_id,
             'timestamp': datetime.now().isoformat(),
             'algorithms': algorithms,
             'n_runs': int(n_runs),
             'task_type': task_type,
             'total_time': float(total_time),
-            'dataset': st.session_state.current_data.get('name', 'Unknown') if st.session_state.current_data else 'Custom',
+            'dataset': dataset_info['name'],
+            'dataset_info': dataset_info,
             'best_algorithm': min(results.items(), key=lambda x: x[1].get('best_fitness', 1.0))[0] if results else None,
             'best_fitness': float(min(results.values(), key=lambda x: x.get('best_fitness', 1.0)).get('best_fitness', 1.0)) if results else 1.0,
             'algorithms_tested': int(len(algorithms)),
@@ -1133,18 +1163,85 @@ def save_to_user_history(results, total_time, algorithms, n_runs, task_type):
         # Save profile
         save_profile(st.session_state.user_profile)
         
+        # Save results to persistent file storage
+        save_results_to_file(run_id, results, history_entry)
+        
     except Exception as e:
         print(f"Error saving to user history: {e}")
         import traceback
         traceback.print_exc()
 
 
+def save_results_to_file(run_id, results, metadata):
+    """Save optimization results to persistent file storage"""
+    try:
+        import json
+        import os
+        from pathlib import Path
+        
+        # Create user results directory
+        username = st.session_state.user_profile.username if st.session_state.user_profile else "guest"
+        results_dir = Path("persistent_state") / "results" / username
+        results_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create filename with timestamp and run_id
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{timestamp}_{run_id[:8]}.json"
+        filepath = results_dir / filename
+        
+        # Prepare data for saving
+        save_data = {
+            'metadata': metadata,
+            'results': convert_to_json_serializable(results)
+        }
+        
+        # Save to JSON file
+        with open(filepath, 'w') as f:
+            json.dump(save_data, f, indent=2)
+        
+        print(f"Results saved to: {filepath}")
+        return str(filepath)
+        
+    except Exception as e:
+        print(f"Error saving results to file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def load_results_from_file(run_id):
+    """Load optimization results from persistent file storage"""
+    try:
+        import json
+        from pathlib import Path
+        
+        username = st.session_state.user_profile.username if st.session_state.user_profile else "guest"
+        results_dir = Path("persistent_state") / "results" / username
+        
+        # Find file with matching run_id
+        if results_dir.exists():
+            for filepath in results_dir.glob("*.json"):
+                try:
+                    with open(filepath, 'r') as f:
+                        data = json.load(f)
+                        if data.get('metadata', {}).get('run_id') == run_id:
+                            return data
+                except Exception as e:
+                    continue
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error loading results from file: {e}")
+        return None
+
+
 def show_disclaimer():
     """Show disclaimer modal on first visit - must be accepted to continue"""
     if not st.session_state.disclaimer_accepted:
         # Full screen overlay for disclaimer
-        st.markdown('<h1 class="main-header">🧬 MHA Toolbox</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-header">Meta-Heuristic Algorithm Optimization Suite</p>', unsafe_allow_html=True)
+        # Header removed - shown only on home page
         
         st.markdown("""
         <div class="disclaimer-box">
@@ -1263,8 +1360,7 @@ def main():
     
     # Require authentication
     if not st.session_state.user_authenticated:
-        st.markdown('<h1 class="main-header">🧬 MHA Toolbox</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-header">Meta-Heuristic Algorithm Optimization Suite</p>', unsafe_allow_html=True)
+        # Header removed - shown only on home page
         
         st.markdown("""
         <div class="info-box">
@@ -1461,17 +1557,17 @@ def show_home():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🚀 Start New Optimization", type="primary", use_container_width=True):
+        if st.button("🚀 Start New Optimization", type="primary", width='stretch'):
             st.session_state.current_page = "🚀 New Optimization"
             st.rerun()
     
     with col2:
-        if st.button("� View History", use_container_width=True):
+        if st.button("� View History", width='stretch'):
             st.session_state.current_page = "� History"
             st.rerun()
     
     with col3:
-        if st.button("📖 Learn More", use_container_width=True):
+        if st.button("📖 Learn More", width='stretch'):
             st.session_state.current_page = "📖 About"
             st.rerun()
     
@@ -2073,7 +2169,7 @@ def show_dataset_selection_tab():
                     
                     if st.button(f"Select {dataset['name']}", 
                                key=f"select_{dataset['name']}", 
-                               use_container_width=True,
+                               width='stretch',
                                type=button_type):
                         # Load the dataset
                         from sklearn.datasets import load_breast_cancer, load_wine, load_iris, load_digits
@@ -2117,7 +2213,7 @@ def show_dataset_selection_tab():
             st.markdown("---")
             with st.expander("📋 Dataset Preview", expanded=True):
                 df = st.session_state.current_data['df']
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df.head(10), width='stretch')
                 st.info(f"✅ Shape: {df.shape[0]} rows × {df.shape[1]} columns")
     
     # Workflow 2: Custom CSV Upload
@@ -2132,12 +2228,12 @@ def show_dataset_selection_tab():
                 st.success(f"✅ File uploaded: {uploaded_file.name}")
                 
                 with st.expander("📋 Dataset Preview", expanded=True):
-                    st.dataframe(df.head(10), use_container_width=True)
+                    st.dataframe(df.head(10), width='stretch')
                     st.info(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns")
                 
                 target_col = st.selectbox("Select the target (output) column:", df.columns)
                 
-                if st.button("Confirm Dataset", type="primary", use_container_width=True):
+                if st.button("Confirm Dataset", type="primary", width='stretch'):
                     X = df.drop(columns=[target_col]).values
                     y = df[target_col].values
                     
@@ -2167,7 +2263,7 @@ def show_dataset_selection_tab():
         with col3:
             n_classes = st.number_input("Number of Classes", 2, 10, 2)
         
-        if st.button("🎲 Generate Dataset", type="primary", use_container_width=True):
+        if st.button("🎲 Generate Dataset", type="primary", width='stretch'):
             from sklearn.datasets import make_classification
             
             X, y = make_classification(
@@ -2196,7 +2292,7 @@ def show_dataset_selection_tab():
             
             st.success(f"✅ Generated {n_samples} samples with {n_features} features")
             with st.expander("📋 Dataset Preview", expanded=True):
-                st.dataframe(df.head(10), use_container_width=True)
+                st.dataframe(df.head(10), width='stretch')
             
             st.rerun()
     
@@ -2325,11 +2421,11 @@ def show_algorithm_selection_tab():
                                 
                                 # Add/Remove button
                                 if is_selected:
-                                    if st.button(f"❌ Remove", key=f"rec_remove_{algo_name}", use_container_width=True):
+                                    if st.button(f"❌ Remove", key=f"rec_remove_{algo_name}", width='stretch'):
                                         st.session_state.selected_algorithms.remove(algo_name)
                                         st.rerun()
                                 else:
-                                    if st.button(f"✅ Add", key=f"rec_add_{algo_name}", use_container_width=True, type="primary"):
+                                    if st.button(f"✅ Add", key=f"rec_add_{algo_name}", width='stretch', type="primary"):
                                         if 'selected_algorithms' not in st.session_state:
                                             st.session_state.selected_algorithms = []
                                         st.session_state.selected_algorithms.append(algo_name)
@@ -2344,7 +2440,7 @@ def show_algorithm_selection_tab():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("Select All", use_container_width=True, key="select_all_algos"):
+        if st.button("Select All", width='stretch', key="select_all_algos"):
             from mha_toolbox.algorithm_categories import ALGORITHM_CATEGORIES
             all_algos = []
             for cat_data in ALGORITHM_CATEGORIES.values():
@@ -2356,7 +2452,7 @@ def show_algorithm_selection_tab():
             st.rerun()
     
     with col2:
-        if st.button("Select Recommended", use_container_width=True, key="select_recommended"):
+        if st.button("Select Recommended", width='stretch', key="select_recommended"):
             if st.session_state.get('current_data'):
                 top_algos = [algo_name for algo_name, _, _ in recommendations[:10]]
                 st.session_state.selected_algorithms = top_algos
@@ -2367,22 +2463,24 @@ def show_algorithm_selection_tab():
                 st.rerun()
     
     with col3:
-        if st.button("Clear Selection", use_container_width=True, key="clear_algos"):
+        if st.button("Clear Selection", width='stretch', key="clear_algos"):
             st.session_state.selected_algorithms = []
             st.rerun()
     
     st.markdown("---")
     
-    # Algorithm groups with expandable interface
+    # Algorithm groups with expandable interface - use dynamic categories
     from mha_toolbox.algorithm_categories import ALGORITHM_CATEGORIES
     
-    algorithm_groups = {
-        "Swarm Intelligence": ["pso", "alo", "woa", "gwo", "ssa", "mrfo", "goa", "sfo", "hho"],
-        "Evolutionary": ["ga", "de", "eo", "es", "ep"],
-        "Physics-Based": ["sca", "sa", "hgso", "wca", "asa"],
-        "Bio-Inspired": ["ba", "fa", "csa", "coa", "msa", "bfo"],
-        "Novel & Hybrid": ["ao", "aoa", "cgo", "fbi", "gbo", "ica", "pfa", "qsa", "sma", "spbo", "tso", "vcs"]
-    }
+    # Convert ALGORITHM_CATEGORIES to simpler format for display
+    algorithm_groups = {}
+    for category_name, category_data in ALGORITHM_CATEGORIES.items():
+        if isinstance(category_data, dict) and 'algorithms' in category_data:
+            # Remove emoji prefix for cleaner display
+            clean_name = category_name.replace("🧬 ", "").replace("🐝 ", "").replace("🦅 ", "")
+            clean_name = clean_name.replace("🌡️ ", "").replace("🧠 ", "").replace("🦠 ", "")
+            clean_name = clean_name.replace("🔥 ", "").replace("🎯 ", "").replace("🔍 ", "").replace("🌊 ", "")
+            algorithm_groups[clean_name] = category_data['algorithms']
     
     for group_name, algorithms in algorithm_groups.items():
         # Filter algorithms based on search
@@ -2397,8 +2495,8 @@ def show_algorithm_selection_tab():
                 with cols[i % 4]:
                     is_selected = alg in st.session_state.get('selected_algorithms', [])
                     
-                    # Dynamic key for checkbox
-                    key = f"alg_check_{alg}_{is_selected}"
+                    # Unique key for checkbox - include group name to avoid duplicates
+                    key = f"alg_check_{group_name}_{alg}_{is_selected}"
                     
                     checked = st.checkbox(
                         alg.upper(),
@@ -2433,12 +2531,12 @@ def show_configuration_and_run_tab():
         
         col_back, col_clear = st.columns([3, 1])
         with col_back:
-            if st.button("🔄 New Run", use_container_width=True):
+            if st.button("🔄 New Run", width='stretch'):
                 if 'optimization_results' in st.session_state:
                     del st.session_state.optimization_results
                 st.rerun()
         with col_clear:
-            if st.button("🗑️ Clear Results", use_container_width=True):
+            if st.button("🗑️ Clear Results", width='stretch'):
                 if 'optimization_results' in st.session_state:
                     del st.session_state.optimization_results
                 st.rerun()
@@ -2530,7 +2628,7 @@ def show_configuration_and_run_tab():
     st.markdown("---")
     
     # Run button
-    if st.button("🚀 Start Optimization", type="primary", use_container_width=True):
+    if st.button("🚀 Start Optimization", type="primary", width='stretch'):
         run_optimization(
             st.session_state.selected_algorithms,
             max_iter,
@@ -2563,6 +2661,7 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
         st.info(f"🎯 Task: **{task_type.replace('_', ' ').title()}** | Algorithms: {len(algorithms)} | Runs per algorithm: {n_runs}")
         progress_bar = st.progress(0)
         status_text = st.empty()
+        queued_text = st.empty()  # Display queued algorithms
         time_text = st.empty()
         metrics_placeholder = st.empty()
     
@@ -2571,7 +2670,13 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
     
     for algo_idx, algo in enumerate(algorithms):
         algo_start = time.time()
-        status_text.markdown(f"**Running:** `{algo.upper()}` ({algo_idx+1}/{total_algorithms})")
+        # Add hourglass emoji with running status
+        status_text.markdown(f"⏳ **Running:** `{algo.upper()}` ({algo_idx+1}/{total_algorithms})")
+        
+        # Show queued algorithms
+        if algo_idx + 1 < total_algorithms:
+            queued_algos = [a.upper() for a in algorithms[algo_idx+1:]]
+            queued_text.markdown(f"⏳ **Queued:** {', '.join([f'`{a}`' for a in queued_algos[:5]])}{'...' if len(queued_algos) > 5 else ''}")
         
         # Create results container for this algorithm
         algo_runs = []
@@ -2580,7 +2685,8 @@ def run_optimization(algorithms, n_iterations, population_size, n_features,
             # Run multiple times for statistical significance
             for run in range(n_runs):
                 run_start = time.time()
-                status_text.markdown(f"**Running:** `{algo.upper()}` - Run {run+1}/{n_runs} ({algo_idx+1}/{total_algorithms})")
+                # Add hourglass emoji with running status
+                status_text.markdown(f"⏳ **Running:** `{algo.upper()}` - Run {run+1}/{n_runs} ({algo_idx+1}/{total_algorithms})")
                 
                 # Import and initialize MHA toolbox
                 from mha_toolbox import MHAToolbox
@@ -3042,7 +3148,7 @@ def show_results_summary(results):
         text_auto='.6f'
     )
     fig_bar.update_layout(height=500)
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width='stretch')
 
 
 def show_feature_analysis(results):
@@ -3182,7 +3288,7 @@ def show_feature_analysis(results):
         )
         fig_features.update_xaxes(tickangle=-45)
         
-        st.plotly_chart(fig_features, use_container_width=True)
+        st.plotly_chart(fig_features, width='stretch')
         
         # Add color legend
         st.markdown("""
@@ -3360,7 +3466,7 @@ def show_comparative_analysis(results):
                 showlegend=False,
                 yaxis_title="Fitness Value (0 = perfect, 1 = worst)"
             )
-            st.plotly_chart(fig_box, use_container_width=True)
+            st.plotly_chart(fig_box, width='stretch')
             
             # Show summary stats
             st.markdown("**📊 Statistical Summary per Algorithm:**")
@@ -3376,7 +3482,7 @@ def show_comparative_analysis(results):
                     'Mean': f"{alg_data.mean():.6f}",
                     'Std Dev': f"{alg_data.std():.6f}"
                 })
-            st.dataframe(pd.DataFrame(stats_data), use_container_width=True)
+            st.dataframe(pd.DataFrame(stats_data), width='stretch')
         else:
             st.warning(f"⚠️ Box plot requires multiple runs per algorithm. Current runs: {runs_per_algo.to_dict()}")
     else:
@@ -3408,7 +3514,7 @@ def show_comparative_analysis(results):
         showlegend=False
     )
     fig_mean.update_xaxes(tickangle=-45)
-    st.plotly_chart(fig_mean, use_container_width=True)
+    st.plotly_chart(fig_mean, width='stretch')
     
     # 3. ACCURACY COMPARISON (inverse of fitness)
     st.markdown("#### 🎯 Accuracy Comparison (Higher is Better)")
@@ -3432,7 +3538,7 @@ def show_comparative_analysis(results):
         showlegend=False
     )
     fig_acc.update_xaxes(tickangle=-45)
-    st.plotly_chart(fig_acc, use_container_width=True)
+    st.plotly_chart(fig_acc, width='stretch')
     
     # 4. STANDARD DEVIATION COMPARISON (Reliability)
     st.markdown("#### 📐 Standard Deviation Comparison (Consistency)")
@@ -3456,7 +3562,7 @@ def show_comparative_analysis(results):
         showlegend=False
     )
     fig_std.update_xaxes(tickangle=-45)
-    st.plotly_chart(fig_std, use_container_width=True)
+    st.plotly_chart(fig_std, width='stretch')
     
     # 5. EXECUTION TIME COMPARISON with SD
     st.markdown("#### ⏱️ Execution Time Comparison")
@@ -3484,7 +3590,7 @@ def show_comparative_analysis(results):
         showlegend=False
     )
     fig_time.update_xaxes(tickangle=-45)
-    st.plotly_chart(fig_time, use_container_width=True)
+    st.plotly_chart(fig_time, width='stretch')
     
     # 6. FEATURE SELECTION COMPARISON
     if 'Features Selected' in df_summary.columns:
@@ -3519,7 +3625,7 @@ def show_comparative_analysis(results):
             showlegend=False
         )
         fig_features.update_xaxes(tickangle=-45)
-        st.plotly_chart(fig_features, use_container_width=True)
+        st.plotly_chart(fig_features, width='stretch')
     
     # 7. MULTI-DIMENSIONAL COMPARISON (Scatter plot)
     st.markdown("#### 🔄 Multi-Dimensional Comparison")
@@ -3541,7 +3647,7 @@ def show_comparative_analysis(results):
         xaxis_title="Mean Execution Time (seconds) - Lower is Better",
         yaxis_title="Mean Fitness - Lower is Better"
     )
-    st.plotly_chart(fig_scatter, use_container_width=True)
+    st.plotly_chart(fig_scatter, width='stretch')
     
     # 8. RANKING TABLE
     st.markdown("#### 🏆 Overall Ranking")
@@ -3675,7 +3781,7 @@ def show_convergence_analysis(results):
         showlegend=True
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     
     st.success(f"✅ Showing convergence curves for **{len(algorithms_with_data)} algorithms**: {', '.join([a.upper() for a in algorithms_with_data])}")
     
@@ -3721,7 +3827,7 @@ def show_convergence_analysis(results):
             'Improvement %': '{:.2f}%',
             '90% Conv. Iter': '{:.0f}',
             'Total Iterations': '{:.0f}'
-        }), use_container_width=True)
+        }), width='stretch')
         
         # Highlight best performers
         best_improvement = conv_df.loc[conv_df['Improvement %'].idxmax()]
@@ -3779,7 +3885,7 @@ def show_export_options(results):
             data=csv,
             file_name=f"mha_results_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
-            use_container_width=True
+            width='stretch'
         )
     
     with col2:
@@ -3792,7 +3898,7 @@ def show_export_options(results):
             data=json_data,
             file_name=f"mha_results_full_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
             mime="application/json",
-            use_container_width=True
+            width='stretch'
         )
     
     st.markdown("---")
@@ -3823,7 +3929,7 @@ def show_export_options(results):
                 data=conv_csv,
                 file_name=f"mha_convergence_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
     
     with col4:
@@ -3857,13 +3963,13 @@ def show_export_options(results):
                 data=feature_csv,
                 file_name=f"mha_features_{best_algo[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width='stretch'
             )
     
     st.success("✅ All export options are available above. Choose the format you need!")
     
     # Quick action button
-    if st.button("📊 View in Results History Page", type="primary", use_container_width=True):
+    if st.button("📊 View in Results History Page", type="primary", width='stretch'):
         st.session_state.current_page = "📊 Results"
         st.rerun()
 
@@ -3891,7 +3997,7 @@ def show_results():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🚀 Start New Optimization", type="primary", use_container_width=True):
+        if st.button("🚀 Start New Optimization", type="primary", width='stretch'):
             st.session_state.current_page = "🚀 New Optimization"
             st.rerun()
 
@@ -4273,7 +4379,7 @@ def show_history():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("🚀 Start New Optimization", type="primary", use_container_width=True):
+        if st.button("🚀 Start New Optimization", type="primary", width='stretch'):
             st.session_state.current_page = "🚀 New Optimization"
             st.rerun()
         return
@@ -4365,11 +4471,13 @@ def show_history():
         
         algorithms = entry.get('algorithms', [])
         dataset = entry.get('dataset', 'Unknown')
+        dataset_info = entry.get('dataset_info', {})
         task_type = entry.get('task_type', 'Unknown')
         best_algo = entry.get('best_algorithm', 'N/A')
         best_fitness = entry.get('best_fitness', 'N/A')
         total_time = entry.get('total_time', 0)
         n_runs = entry.get('n_runs', 1)
+        run_id = entry.get('run_id', None)
         
         with st.expander(f"🔬 Run #{len(filtered_history) - idx}: {formatted_time} - {dataset}"):
             col1, col2 = st.columns(2)
@@ -4378,7 +4486,10 @@ def show_history():
                 st.markdown(f"""
                 **📊 Overview**
                 - **Dataset:** {dataset}
-                - **Task Type:** {task_type}
+                - **Samples:** {dataset_info.get('n_samples', 'N/A')}
+                - **Features:** {dataset_info.get('n_features', 'N/A')}
+                - **Classes:** {dataset_info.get('n_classes', 'N/A')}
+                - **Task Type:** {task_type.replace('_', ' ').title()}
                 - **Algorithms:** {len(algorithms)}
                 - **Runs per Algorithm:** {n_runs}
                 - **Total Time:** {total_time:.2f}s
@@ -4387,12 +4498,24 @@ def show_history():
             with col2:
                 st.markdown(f"""
                 **🏆 Best Result**
-                - **Algorithm:** {best_algo}
+                - **Algorithm:** {best_algo.upper() if best_algo != 'N/A' else 'N/A'}
                 - **Fitness:** {best_fitness if isinstance(best_fitness, str) else f'{best_fitness:.6e}'}
                 """)
+                
+                # Add button to reload full results if run_id exists
+                if run_id:
+                    if st.button(f"📂 Load Full Results", key=f"load_results_{run_id}", width='stretch'):
+                        loaded_data = load_results_from_file(run_id)
+                        if loaded_data:
+                            st.session_state.optimization_results = loaded_data['results']
+                            st.session_state.current_page = "📊 Results"
+                            st.success("✅ Results loaded! Redirecting to Results page...")
+                            st.rerun()
+                        else:
+                            st.error("❌ Could not load results from file.")
             
             st.markdown("**🧬 Algorithms Tested:**")
-            st.write(", ".join(algorithms))
+            st.write(", ".join([a.upper() for a in algorithms]))
             
             # Results summary
             results_summary = entry.get('results_summary', {})
@@ -4413,7 +4536,7 @@ def show_history():
                 
                 if results_data:
                     df = pd.DataFrame(results_data)
-                    st.dataframe(df, use_container_width=True)
+                    st.dataframe(df, width='stretch')
 
 
 def show_settings():
@@ -5195,3 +5318,4 @@ def show_settings():
 
 if __name__ == "__main__":
     main()
+

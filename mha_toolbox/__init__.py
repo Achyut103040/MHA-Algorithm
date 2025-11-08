@@ -1,20 +1,22 @@
 """
-MHA Toolbox: Professional Meta-Heuristic Algorithm Library
-Version 2.0.3 - Enhanced validation, error handling, and parallel execution
+MHA Flow: Professional Meta-Heuristic Algorithm Library
+Version 2.0.6 - UI Improvements: Fixed Algorithm Count & Added Running Animations
 
 Installation modes:
-    pip install mha-toolbox           # Library only
-    pip install mha-toolbox[ui]       # With web interface
-    pip install mha-toolbox[complete] # Everything
+    pip install mha-flow           # Library only
+    pip install mha-flow[ui]       # With web interface
+    pip install mha-flow[complete] # Everything
 
 Usage:
-    # Web Interface
-    python -m mha_toolbox.ui
+    # Commands
+    mha-flow                       # Launch local web interface
+    mha-flow-web                   # Open online interface (https://mha-flow.streamlit.app/)
+    mha-flow-cli                   # Command-line interface
     
     # Library Mode
     from mha_toolbox import optimize, MHAToolbox
     
-    # Algorithm Recommender
+    # Algorithm Recommender (AI-Powered)
     from mha_toolbox import AlgorithmRecommender
     
     # Parallel Optimization
@@ -24,8 +26,8 @@ Usage:
     from mha_toolbox.validators import OptimizationValidator
 """
 
-__version__ = "2.0.3"
-__author__ = "MHA Development Team"
+__version__ = "2.0.6"
+__author__ = "MHA Flow Development Team"
 __license__ = "MIT"
 
 # Core library imports (always available)
